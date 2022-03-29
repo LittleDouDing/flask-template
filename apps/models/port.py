@@ -52,7 +52,8 @@ class PortManage:
                     'device_name': item.device_name,
                     'full_name': item.full_name,
                     'device_type': item.device_type,
-                    'ports':item.ports
+                    'ports': item.ports,
+                    'port_id': item.port_id
                 }
                 all_port.append(data)
             result = {'current_page': page, 'all_page': all_page, 'ports': all_port}

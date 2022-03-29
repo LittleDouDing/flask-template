@@ -28,16 +28,13 @@ class TopologyManage:
         return {'message': 'The device port does not exist', 'result': False}
 
     def _add_topology(self):
-        print(self._datadict.get('topology'))
-        print(session.query(DeviceTopology).filter_by(topology=json.dumps(self._datadict.get('topology'))).first())
-        if not session.query(DeviceTopology).filter(DeviceTopology.topology==self._datadict.get('topology')).first():
+        if self._datadict.get('topology') not in [x.topology for x in session.query(DeviceTopology).all()]:
             try:
                 topology = DeviceTopology(topology=self._datadict.get('topology'))
                 session.add(topology)
-                # session.commit()
+                session.commit()
                 return {'message': 'The topology was added successfully', 'result': True}
             except Exception as e:
                 session.rollback()
-                print(e)
                 return {'message': re.findall(r'.+"(.+)"', str(e)), 'result': False}
         return {'message': 'The topology already exists', 'result': False}
