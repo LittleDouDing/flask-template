@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import app
 import apps
 from apps.models import db
 
@@ -29,5 +28,6 @@ def get_error_message(errors):
 
 
 def send_async_email(msg):
+    import app
     with app.app.app_context():
         apps.mail.send(msg)
