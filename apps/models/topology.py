@@ -7,7 +7,7 @@ session = db.session
 
 
 class TopologyManage:
-    def __init__(self, datadict, handle_type=None):
+    def __init__(self, datadict, handle_type):
         self._datadict = datadict
         if handle_type == 'search_device_port':
             self.data = self._search_device_port()

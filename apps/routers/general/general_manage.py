@@ -54,7 +54,8 @@ def get_user_info():
         user_info = asyncio.run(get_value(username))
         if user_info:
             return jsonify({'msg': 'success', 'data': eval(user_info), 'code': 200}), 200
-        user = UserManager(request.args, usertype=usertype, handle_type='get_info')
+        form_data = {key: form.data[key] for key in form.data if form.data[key]}
+        user = UserManager(form_data, usertype=usertype, handle_type='get_info')
         message = user.data.get('message')
         if user.data.get('result'):
             asyncio.run(set_value(username, str(user.data.get('data'))))
@@ -75,16 +76,17 @@ def user_login():
     # 参数username， password
     form = LoginFrom(request.form)
     if form.validate():
-        username = form.username.data
-        user = UserManager(request.form, usertype=usertype, handle_type='check_user')
+        form_data = {key: form.data[key] for key in form.data if form.data[key]}
+        user = UserManager(form_data, usertype=usertype, handle_type='check_user')
         message = user.data.get('message')
         # 查找到该用户
         if user.data.get('result'):
-            asyncio.run(delete_key(request.form.get('username') + '_error_num'))
+            username = form.username.data
+            asyncio.run(delete_key(form_data.get('username') + '_error_num'))
             access_token = create_access_token(identity=username)
             refresh_token = create_refresh_token(identity=username)
             return jsonify({'msg': message, 'token': access_token, 'refresh_token': refresh_token, 'code': 200}), 200
-        asyncio.run(set_error(request.form.get('username') + '_error_num'))
+        asyncio.run(set_error(form_data.get('username') + '_error_num'))
         return jsonify({'msg': message, 'code': 403}), 403
     message = get_error_message(form.errors)
     return jsonify({'msg': message, 'code': 403}), 403
@@ -108,7 +110,8 @@ def change_password():
                 return jsonify({'msg': "The email verification code input error", 'code': 403}), 403
         if form.username.data != get_jwt_identity():
             return jsonify({'msg': "Only the information of the current user can be manipulated", 'code': 403}), 403
-        user = UserManager(request.form, usertype=usertype, handle_type='modify_password')
+        form_data = {key: form.data[key] for key in form.data if form.data[key]}
+        user = UserManager(form_data, usertype=usertype, handle_type='modify_password')
         message = user.data.get('message')
         if user.data.get('result'):
             return jsonify({'msg': message, 'code': 200}), 200
@@ -127,10 +130,12 @@ def modify_info():
     if form.validate():
         if form.username.data != get_jwt_identity():
             return jsonify({'msg': "Only the information of the current user can be manipulated", 'code': 403}), 403
-        user = UserManager(request.form, usertype=usertype, handle_type='modify_info')
+        form_data = {key: form.data[key] for key in form.data if form.data[key]}
+        user = UserManager(form_data, usertype=usertype, handle_type='modify_info')
         message = user.data.get('message')
         if not user.data.get('result'):
             return jsonify({'msg': message, 'code': 406}), 403
+        asyncio.run(delete_key(form_data.get('username')))
         return jsonify({'msg': message, 'code': 200}), 200
     message = get_error_message(form.errors)
     return jsonify({'msg': message, 'code': 403}), 403

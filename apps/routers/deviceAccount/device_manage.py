@@ -68,15 +68,16 @@ def delete_device_account():
 def search_device_account():
     form = SearchDeviceAccountForm(request.args)
     if form.validate():
+        form_data = {key: form.data[key] for key in form.data if form.data[key]}
         page = str(form.page.data) if form.page.data else '1'
-        accounts_data = asyncio.run(get_value('page_' + page + '_' + str(request.args) + '_device_accounts'))
+        accounts_data = asyncio.run(get_value('page_' + page + '_' + str(form_data.items()) + '_device_accounts'))
         if accounts_data:
             return jsonify({'msg': 'success', 'data': eval(accounts_data), 'code': 200}), 200
-        device = DeviceManage(request.args, handle_type='search_device_account')
+        device = DeviceManage(form_data, handle_type='search_device_account')
         message = device.data.get('message')
         if device.data.get('result'):
             data = device.data.get('data')
-            asyncio.run(set_value('page_' + page + '_' + str(request.args) + '_device_accounts', str(data)))
+            asyncio.run(set_value('page_' + page + '_' + str(form_data.items()) + '_device_accounts', str(data)))
             return jsonify({'msg': message, 'data': data, 'code': 200}), 200
         return jsonify({'msg': message, 'code': 403}), 403
     message = get_error_message(form.errors)

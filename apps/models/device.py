@@ -10,7 +10,7 @@ session = db.session
 
 
 class DeviceManage:
-    def __init__(self, datadict, handle_type=None):
+    def __init__(self, datadict, handle_type):
         self._datadict = datadict
         if handle_type == 'add_device_account':
             self.data = self._add_device_account()
@@ -84,6 +84,7 @@ class DeviceManage:
     def _search_device_account(self):
         # conditions = {key + '.like': '%' + self._datadict.get(key) + '%' for key in list(self._datadict) if
         #               self._datadict.get(key) and self._datadict.get(key) != 'page'}
+        print(self._datadict)
         page, all_page, results = search_data(table=DeviceAccount, datadict=self._datadict)
         all_device = []
         if results:

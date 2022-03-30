@@ -61,3 +61,11 @@ class GetAllUserForm(Form):
         Optional(),
         DataRequired(message='The number of pages must be an integer')
     ])
+    username = StringField(validators=[
+        Optional(),
+        Length(min=4, max=20, message='The length of the user account must be between 4-20')
+    ])
+    name = StringField(validators=[
+        Optional(),
+        Length(min=2, max=30, message='The length of the username must be between 2-30')
+    ])

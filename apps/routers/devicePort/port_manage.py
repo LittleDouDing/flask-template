@@ -19,7 +19,7 @@ def add_port():
     file = request.files.get('file')
     if not file or file.filename.rsplit('.')[1] not in ['xls', 'xlsx']:
         return {'msg': 'The file does not exist or the file format is not xls or xlsx', 'code': 403}, 403
-    res = PortManage(file=file.read(), handle_type='add_port')
+    res = PortManage(datadict=file.read(), handle_type='add_port')
     return jsonify({'msg': res.data.get('message'), 'code': 200}), 200
 
 
@@ -45,15 +45,16 @@ def delete_port():
 def search_port():
     form = GetPortForm(request.args)
     if form.validate():
+        form_data = {key: form.data[key] for key in form.data if form.data[key]}
         page = str(form.page.data) if form.page.data else '1'
-        ports_data = asyncio.run(get_value('page_' + page + '_' + str(request.args) + '_device_ports'))
+        ports_data = asyncio.run(get_value('page_' + page + '_' + str(form_data.items()) + '_device_ports'))
         if ports_data:
             return jsonify({'msg': 'success', 'data': eval(ports_data), 'code': 200}), 200
-        port = PortManage(datadict=request.args, handle_type='get_port')
+        port = PortManage(datadict=form_data, handle_type='get_port')
         message = port.data.get('message')
         if port.data.get('result'):
             data = port.data.get('data')
-            asyncio.run(set_value('page_' + page + '_' + str(request.args) + '_device_ports', str(data)))
+            asyncio.run(set_value('page_' + page + '_' + str(form_data.items()) + '_device_ports', str(data)))
             return jsonify({'msg': message, 'data': data, 'code': 200}), 200
         return jsonify({'msg': message, 'code': 403}), 403
     message = get_error_message(form.errors)

@@ -9,9 +9,8 @@ session = db.session
 
 
 class PortManage:
-    def __init__(self, file=None, datadict=None, handle_type=None):
+    def __init__(self, datadict, handle_type):
         self._datadict = datadict
-        self._file = file
         if handle_type == 'add_port':
             self.data = self._add_port()
         if handle_type == 'get_port':
@@ -20,7 +19,7 @@ class PortManage:
             self.data = self._delete_port()
 
     def _add_port(self):
-        excel_file = xlrd.open_workbook(file_contents=self._file)
+        excel_file = xlrd.open_workbook(file_contents=self._datadict.get('file'))
         t = excel_file.sheet_by_index(0)
         device_data = set([(t.row_values(i)[0], t.row_values(i)[1], t.row_values(i)[2]) for i in range(1, t.nrows)])
         for x in device_data:

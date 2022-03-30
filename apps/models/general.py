@@ -1,6 +1,5 @@
 import asyncio
-
-from apps.models.models import User, Admin, DevicePort
+from apps.models.models import User, Admin
 from apps.models import db
 from apps.models import get_value, set_value
 import re
@@ -12,7 +11,7 @@ session = db.session
 
 
 class UserManager:
-    def __init__(self, datadict, usertype=None, handle_type=None):
+    def __init__(self, datadict, handle_type, usertype='user'):
         self._datadict = datadict
         self._table = Admin if usertype == 'admin' else User
         if handle_type == 'modify_password':
@@ -75,12 +74,9 @@ class UserManager:
         if not session.query(self._table).filter_by(username=self._datadict.get('username')).first():
             return {'message': 'The current user does not exist', 'result': False}
         try:
-            session.query(self._table).filter_by(username=self._datadict.get('username')).update({
-                self._table.name: self._datadict.get('name'),
-                self._table.sex: self._datadict.get('sex'),
-                self._table.email: self._datadict.get('email'),
-                self._table.phone: self._datadict.get('phone')
-            })
+            user = session.query(self._table).filter_by(username=self._datadict.get('username')).first()
+            for key in self._datadict:
+                setattr(user, key, self._datadict.get(key))
             session.commit()
             return {'message': 'Information modified successfully', 'result': True}
         except Exception as e:
@@ -96,9 +92,9 @@ class UserManager:
         return user.author
 
 
-def search_data(table=None, datadict=None):
+def search_data(table, datadict):
     page = int(datadict.get('page')) if datadict.get('page') else 1
-    conditions = (table.__dict__.get(k).like('%' + datadict.get(k) + '%') for k in list(datadict))
+    conditions = (table.__dict__.get(k).like('%' + datadict.get(k) + '%') for k in list(datadict) if k != 'page')
     results = session.query(table).filter(*conditions).paginate(page=page, per_page=20, error_out=False).items
     count = session.query(table).count()
     all_page = count // 20 if count % 20 == 0 else count // 20 + 1
