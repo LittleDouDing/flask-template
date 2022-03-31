@@ -16,16 +16,16 @@ class UserManager:
         self._table = Admin if usertype == 'admin' else User
         if handle_type == 'modify_password':
             self.data = self._change_password()
-        if handle_type == 'check_user':
-            self.data = self._check_user()
+        if handle_type == 'user_login':
+            self.data = self._user_login()
         if handle_type == 'get_info':
-            self.data = self._read_userinfo()
+            self.data = self._get_userinfo()
         if handle_type == 'modify_info':
             self.data = self._modify_information()
         if handle_type == 'get_author':
             self.author = self._get_author()
 
-    def _read_userinfo(self):
+    def _get_userinfo(self):
         user = session.query(self._table).filter_by(username=self._datadict.get('username')).first()
         if user:
             data = {
@@ -40,18 +40,18 @@ class UserManager:
             return {'message': 'success', 'result': True, 'data': data}
         return {'message': 'This user does not exist', 'result': False}
 
-    def _check_user(self):
+    def _user_login(self):
         username = self._datadict.get('username')
         password = self._datadict.get('password')
         user = session.query(self._table).filter_by(username=username, password=password).first()
         if not user:
             return {'message': 'Incorrect user account or password', 'result': False}
-        return {'message': 'The current user is a legitimate user', 'result': True}
+        return {'message': 'The current user login successfully', 'result': True}
 
     def _change_password(self):
         old_pwd, new_pwd = self._datadict.get('password'), self._datadict.get('new_password')
         username = self._datadict.get('username')
-        data = self._check_user()
+        data = self._user_login()
         if self._table == Admin:
             if not session.query(self._table).filter_by(username=username).first():
                 return {'message': 'The current user does not exist', 'result': False}

@@ -4,6 +4,7 @@
 
 from aioredis.client import Redis
 from flask_sqlalchemy import SQLAlchemy
+
 # import pymysql
 
 db = SQLAlchemy()
@@ -46,3 +47,10 @@ async def delete_key(key):
     redis = await connect_redis()
     await redis.delete(key)
     await redis.close()
+
+
+async def get_keys():
+    redis = await connect_redis()
+    keys = await redis.keys()
+    await redis.close()
+    return keys

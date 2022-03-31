@@ -6,7 +6,7 @@ from apps.models.topology import TopologyManage
 from apps.models.general import UserManager
 from werkzeug.datastructures import ImmutableMultiDict
 from apps.validates.topology_validate import GetDevicePortForm, AddTopologyForm
-from apps.utils.util_tool import get_error_message
+from apps.utils.util_tool import get_error_message, handle_route
 
 topology_bp = Blueprint('topology_data', __name__, url_prefix='/api/v1/topology')
 
@@ -21,8 +21,7 @@ def add_topology():
         if topology.data.get('result'):
             return jsonify({'msg': message, 'code': 200}), 200
         return {'msg': message, 'code': 403}, 403
-    message = get_error_message(form.errors)
-    return jsonify({'msg': message, 'code': 403}), 403
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 
 
 @topology_bp.route('/delete_topology', methods=['POST'])
@@ -49,10 +48,6 @@ def search_device_port():
     form = GetDevicePortForm(request.args)
     if form.validate():
         device_port = TopologyManage(datadict=request.args, handle_type='search_device_port')
-        message = device_port.data.get('message')
-        if device_port.data.get('result'):
-            data = device_port.data.get('data')
-            return jsonify({'msg': message, 'data': data, 'code': 200}), 200
-        return jsonify({'msg': message, 'code': 403}), 403
-    message = get_error_message(form.errors)
-    return jsonify({'msg': message, 'code': 403}), 403
+        result, code = handle_route(device_port)
+        return jsonify(result), code
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403

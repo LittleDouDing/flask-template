@@ -1,13 +1,12 @@
 import asyncio
-
 from flask import request, jsonify, Blueprint
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from apps.models.device import DeviceManage
 from apps.models.general import UserManager
-from apps.models import get_value, set_value
+from apps.models import get_value
 from apps.validates.device_validate import AddDeviceAccountFrom, DeleteDeviceAccountForm, ModifyDeviceAccountForm, \
     SearchDeviceAccountForm
-from apps.utils.util_tool import get_error_message
+from apps.utils.util_tool import get_error_message, handle_route
 
 device_bp = Blueprint('device_data', __name__, url_prefix='/api/v1/device')
 
@@ -21,12 +20,9 @@ def add_device_account():
     form = AddDeviceAccountFrom(request.form)
     if form.validate():
         device = DeviceManage(request.form, handle_type='add_device_account')
-        message = device.data.get('message')
-        if device.data.get('result'):
-            return jsonify({'msg': message, 'code': 200}), 200
-        return jsonify({'msg': message, 'code': 403}), 403
-    message = get_error_message(form.errors)
-    return jsonify({'msg': message, 'code': 403}), 403
+        result, code = handle_route(device, del_redis_key='device')
+        return jsonify(result), code
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 
 
 @device_bp.route('/modify_account', methods=['POST'])
@@ -38,12 +34,9 @@ def modify_device_account():
     form = ModifyDeviceAccountForm(request.form)
     if form.validate():
         device = DeviceManage(request.form, handle_type='modify_device_account')
-        message = device.data.get('message')
-        if device.data.get('result'):
-            return jsonify({'msg': message, 'code': 200}), 200
-        return jsonify({'msg': message, 'code': 403}), 403
-    message = get_error_message(form.errors)
-    return jsonify({'msg': message, 'code': 403}), 403
+        result, code = handle_route(device, del_redis_key='device')
+        return jsonify(result), code
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 
 
 @device_bp.route('/delete_account', methods=['POST'])
@@ -55,12 +48,9 @@ def delete_device_account():
     form = DeleteDeviceAccountForm(request.form)
     if form.validate():
         device = DeviceManage(request.form, handle_type='delete_device_account')
-        message = device.data.get('message')
-        if device.data.get('result'):
-            return jsonify({'msg': message, 'code': 200}), 200
-        return jsonify({'msg': message, 'code': 403}), 403
-    message = get_error_message(form.errors)
-    return jsonify({'msg': message, 'code': 403}), 403
+        result, code = handle_route(device, del_redis_key='device')
+        return jsonify(result), code
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 
 
 @device_bp.route('/search_account', methods=['GET'])
@@ -70,15 +60,11 @@ def search_device_account():
     if form.validate():
         form_data = {key: form.data[key] for key in form.data if form.data[key]}
         page = str(form.page.data) if form.page.data else '1'
-        accounts_data = asyncio.run(get_value('page_' + page + '_' + str(form_data.items()) + '_device_accounts'))
+        redis_key = 'page_' + page + '_' + str(form_data.items()) + '_device_accounts'
+        accounts_data = asyncio.run(get_value(redis_key))
         if accounts_data:
             return jsonify({'msg': 'success', 'data': eval(accounts_data), 'code': 200}), 200
         device = DeviceManage(form_data, handle_type='search_device_account')
-        message = device.data.get('message')
-        if device.data.get('result'):
-            data = device.data.get('data')
-            asyncio.run(set_value('page_' + page + '_' + str(form_data.items()) + '_device_accounts', str(data)))
-            return jsonify({'msg': message, 'data': data, 'code': 200}), 200
-        return jsonify({'msg': message, 'code': 403}), 403
-    message = get_error_message(form.errors)
-    return jsonify({'msg': message, 'code': 403}), 403
+        result, code = handle_route(device, set_redis_key=redis_key)
+        return jsonify(result), code
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
