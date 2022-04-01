@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import hashlib
 import apps
 from apps.models import db
 from apps.models import delete_key, get_keys, set_value

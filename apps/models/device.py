@@ -84,7 +84,6 @@ class DeviceManage:
     def _search_device_account(self):
         # conditions = {key + '.like': '%' + self._datadict.get(key) + '%' for key in list(self._datadict) if
         #               self._datadict.get(key) and self._datadict.get(key) != 'page'}
-        print(self._datadict)
         page, all_page, results = search_data(table=DeviceAccount, datadict=self._datadict)
         all_device = []
         if results:

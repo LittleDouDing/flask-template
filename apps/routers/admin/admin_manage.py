@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from apps.validates.admin_validate import AddUserForm, GetAllUserForm, DeleteUserForm, ChangeUserPasswordForm, \
     ChangeUserInfoForm
 from apps.models.admin import AdminManager
-from apps.utils.util_tool import get_error_message, handle_route
+from apps.utils.util_tool import get_error_message, handle_route, get_form_data
 from apps.models import get_value
 import asyncio
 
@@ -18,8 +18,7 @@ def admin_add_user():
         return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = AddUserForm(request.form)
     if form.validate():
-        form_data = {key: form.data[key] for key in form.data if form.data[key]}
-        user = AdminManager(form_data, handle_type='add_user')
+        user = AdminManager(get_form_data(form), handle_type='add_user')
         result, code = handle_route(user, del_redis_key='user')
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
@@ -33,8 +32,7 @@ def admin_delete_user():
         return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = DeleteUserForm(request.form)
     if form.validate():
-        form_data = {key: form.data[key] for key in form.data if form.data[key]}
-        user = AdminManager(form_data, handle_type='delete_user')
+        user = AdminManager(get_form_data(form), handle_type='delete_user')
         result, code = handle_route(user, del_redis_key='user')
         return jsonify(result), code
     return {'msg': get_error_message(form.errors), 'code': 403}, 403
@@ -48,8 +46,7 @@ def admin_change_user_password():
         return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = ChangeUserPasswordForm(request.form)
     if form.validate():
-        form_data = {key: form.data[key] for key in form.data if form.data[key]}
-        user = AdminManager(form_data, handle_type='change_user_password')
+        user = AdminManager(get_form_data(form), handle_type='change_user_password')
         result, code = handle_route(user, del_redis_key='user')
         return jsonify(result), code
     return {'msg': get_error_message(form.errors), 'code': 403}, 403
@@ -63,8 +60,7 @@ def admin_modify_user_info():
         return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = ChangeUserInfoForm(request.form)
     if form.validate():
-        form_data = {key: form.data[key] for key in form.data if form.data[key]}
-        user = AdminManager(form_data, handle_type='modify_user_info')
+        user = AdminManager(get_form_data(form), handle_type='modify_user_info')
         result, code = handle_route(user, del_redis_key='user')
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
@@ -78,13 +74,12 @@ def get_all_users():
         return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = GetAllUserForm(request.args)
     if form.validate():
-        form_data = {key: form.data[key] for key in form.data if form.data[key]}
         page = str(form.page.data) if form.page.data else '1'
-        redis_key = 'page_' + page + '_' + str(form_data.items()) + '_users'
+        redis_key = 'page_' + page + '_' + str(get_form_data(form).items()) + '_users'
         users_info = asyncio.run(get_value(redis_key))
         if users_info:
             return jsonify({'msg': 'success', 'data': eval(users_info), 'code': 200}), 200
-        users = AdminManager(form_data, handle_type='get_all_users')
+        users = AdminManager(get_form_data(form), handle_type='get_all_users')
         result, code = handle_route(users, set_redis_key=redis_key)
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403

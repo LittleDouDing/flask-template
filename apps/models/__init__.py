@@ -36,7 +36,7 @@ async def set_value(key, value, expire=300):
     await redis.close()
 
 
-async def set_error(key, expire=1800):
+async def set_times(key, expire=1800):
     redis = await connect_redis()
     await redis.incr(key)
     await redis.expire(key, expire)

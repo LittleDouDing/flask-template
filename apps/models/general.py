@@ -45,7 +45,7 @@ class UserManager:
         password = self._datadict.get('password')
         user = session.query(self._table).filter_by(username=username, password=password).first()
         if not user:
-            return {'message': 'Incorrect user account or password', 'result': False}
+            return {'message': 'The user account or password is incorrect', 'result': False}
         return {'message': 'The current user login successfully', 'result': True}
 
     def _change_password(self):
@@ -60,28 +60,11 @@ class UserManager:
         if self._table == User and not data.get('result'):
             return data
         if old_pwd != new_pwd:
-            try:
-                session.query(self._table).filter_by(username=username, password=old_pwd).update(
-                    {self._table.password: new_pwd})
-                session.commit()
-                return {'message': 'Password reset complete', 'result': True}
-            except Exception as e:
-                session.rollback()
-                return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
-        return {'message': 'New password and old password cannot be the same', 'result': False}
+            return handle_change_password(self._table, new_pwd, condition={'username': username, 'password': old_pwd})
+        return {'message': 'The new password and old password cannot be the same', 'result': False}
 
     def _modify_information(self):
-        if not session.query(self._table).filter_by(username=self._datadict.get('username')).first():
-            return {'message': 'The current user does not exist', 'result': False}
-        try:
-            user = session.query(self._table).filter_by(username=self._datadict.get('username')).first()
-            for key in self._datadict:
-                setattr(user, key, self._datadict.get(key))
-            session.commit()
-            return {'message': 'Information modified successfully', 'result': True}
-        except Exception as e:
-            session.rollback()
-            return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
+        return handle_modify_info(self._table, self._datadict, key='username')
 
     def _get_author(self):
         author = asyncio.run(get_value(self._datadict.get('username') + '_author'))
@@ -99,3 +82,32 @@ def search_data(table, datadict):
     count = session.query(table).count()
     all_page = count // 20 if count % 20 == 0 else count // 20 + 1
     return page, all_page, results
+
+
+def handle_modify_info(table, datadict, key):
+    obj = session.query(table).filter(getattr(table, key) == datadict.get(key)).first()
+    if not obj:
+        return {'message': 'The current record does not exist', 'result': False}
+    try:
+        user_data = {key: obj.__dict__.get(k) for k in obj.__dict__ if k != '_sa_instance_state'}
+        if len(datadict) <= 1 or set(datadict.items()).issubset(set(user_data.items())):
+            return {'message': 'There is currently no need to modify any information', 'result': False}
+        for k in datadict:
+            setattr(obj, k, datadict.get(key))
+        session.commit()
+        return {'message': 'The information modified successfully', 'result': True}
+    except Exception as e:
+        session.rollback()
+        return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
+
+
+def handle_change_password(table, new_pwd, **kwargs):
+    try:
+        condition = kwargs.get('condition')
+        session.query(table).filter_by(**condition).update({table.password: new_pwd})
+        session.commit()
+        return {'message': 'The password reset successfully', 'result': True}
+    except Exception as e:
+        session.rollback()
+        return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
+

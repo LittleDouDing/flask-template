@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
 from apps.utils.util_tool import get_error_message, send_async_email, get_form_data, handle_route
-from apps.models import set_value, get_value, delete_key, set_error
+from apps.models import set_value, get_value, delete_key, set_times
 from apps.models.general import UserManager
 from apps.validates.general_validate import GetInformationFrom, LoginFrom, ChangeUserPasswordForm, ModifyInfoForm, \
     ChangeAdminPasswordForm
@@ -50,11 +50,11 @@ def get_user_info():
         username = form.username.data
         if username != get_jwt_identity():
             return jsonify({'msg': 'Only the information of the current user can be manipulated', 'code': 403}), 403
-        user_info = asyncio.run(get_value(username))
+        user_info = asyncio.run(get_value(username + '_user_info'))
         if user_info:
             return jsonify({'msg': 'success', 'data': eval(user_info), 'code': 200}), 200
         user = UserManager(get_form_data(form), usertype=usertype, handle_type='get_info')
-        result, code = handle_route(user, set_redis_key=username)
+        result, code = handle_route(user, set_redis_key=username + '_user_info')
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 
@@ -64,8 +64,11 @@ def get_user_info():
 def user_login():
     usertype = 'user' if '/user/' in request.url else 'admin'
     error_num = asyncio.run(get_value(request.form.get('username') + '_error_num'))
+    login_num = asyncio.run(get_value(request.form.get('username') + '_login_num'))
     if error_num and int(error_num) >= 3:
         return jsonify({'msg': 'Too many login errors, please try again in 30 minutes', 'code': 403}), 403
+    if login_num and int(login_num) >= 6:
+        return jsonify({'msg': 'Too many login times, please try again in 6 hours', 'code': 403}), 403
     # 参数username， password
     form = LoginFrom(request.form)
     if form.validate():
@@ -73,9 +76,10 @@ def user_login():
         user = UserManager(form_data, usertype=usertype, handle_type='user_login')
         if user.data.get('result'):
             asyncio.run(delete_key(form_data.get('username') + '_error_num'))
+            asyncio.run(set_times(form_data.get('username') + '_login_num', expire=21600))
             access_token = create_access_token(identity=form.username.data)
             return jsonify({'msg': user.data.get('message'), 'token': access_token, 'code': 200}), 200
-        asyncio.run(set_error(form_data.get('username') + '_error_num'))
+        asyncio.run(set_times(form_data.get('username') + '_error_num'))
         return jsonify({'msg': user.data.get('message'), 'code': 403}), 403
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 
@@ -85,6 +89,10 @@ def user_login():
 @jwt_required()
 def change_password():
     usertype = 'user' if '/user/' in request.url else 'admin'
+    redis_key = request.form.get('username') + '_change_pwd_num'
+    change_pwd_num = asyncio.run(get_value(redis_key))
+    if change_pwd_num and int(change_pwd_num) >= 5:
+        return jsonify({'msg': 'Too many change password times, please try again in 6 hours', 'code': 403}), 403
     # 参数username, old_password, new_password
     if usertype == 'admin':
         form = ChangeAdminPasswordForm(request.form)
@@ -100,6 +108,7 @@ def change_password():
             return jsonify({'msg': 'Only the information of the current user can be manipulated', 'code': 403}), 403
         user = UserManager(get_form_data(form), usertype=usertype, handle_type='modify_password')
         result, code = handle_route(user)
+        asyncio.run(set_times(redis_key, expire=21600)) if code == 200 else None
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 
@@ -109,6 +118,10 @@ def change_password():
 @jwt_required()
 def modify_info():
     usertype = 'user' if '/user/' in request.url else 'admin'
+    redis_key = request.form.get('username') + '_modify_info'
+    modify_info_num = asyncio.run(get_value(redis_key))
+    if modify_info_num and int(modify_info_num) >= 10:
+        return jsonify({'msg': 'Too many modify information times, please try again in 3 hours', 'code': 403}), 403
     # 参数username, old_password, new_password
     form = ModifyInfoForm(request.form)
     if form.validate():
@@ -116,5 +129,6 @@ def modify_info():
             return jsonify({'msg': 'Only the information of the current user can be manipulated', 'code': 403}), 403
         user = UserManager(get_form_data(form), usertype=usertype, handle_type='modify_info')
         result, code = handle_route(user, del_redis_key='user')
+        asyncio.run(set_times(redis_key, expire=10800)) if code == 200 else None
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403

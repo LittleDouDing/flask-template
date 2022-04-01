@@ -4,9 +4,9 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from apps.models.device import DeviceManage
 from apps.models.general import UserManager
 from apps.models import get_value
-from apps.validates.device_validate import AddDeviceAccountFrom, DeleteDeviceAccountForm, ModifyDeviceAccountForm, \
-    SearchDeviceAccountForm
-from apps.utils.util_tool import get_error_message, handle_route
+from apps.validates.device_validate import AddSwitchAccountForm, AddBrasAccountFrom, DeleteDeviceAccountForm, \
+    ModifyBrasAccountForm, ModifySwitchAccountForm, SearchDeviceAccountForm
+from apps.utils.util_tool import get_error_message, handle_route, get_form_data
 
 device_bp = Blueprint('device_data', __name__, url_prefix='/api/v1/device')
 
@@ -17,7 +17,10 @@ def add_device_account():
     user = UserManager(datadict={'username': get_jwt_identity()}, handle_type='get_author')
     if user.author == 'check':
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
-    form = AddDeviceAccountFrom(request.form)
+    if request.form.get('device_type') == 'Bras':
+        form = ModifyBrasAccountForm(request.form)
+    else:
+        form = ModifySwitchAccountForm(request.form)
     if form.validate():
         device = DeviceManage(request.form, handle_type='add_device_account')
         result, code = handle_route(device, del_redis_key='device')
@@ -31,7 +34,10 @@ def modify_device_account():
     user = UserManager(datadict={'username': get_jwt_identity()}, handle_type='get_author')
     if user.author == 'check':
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
-    form = ModifyDeviceAccountForm(request.form)
+    if request.form.get('device_type') == 'Bras':
+        form = ModifyBrasAccountForm(request.form)
+    else:
+        form = AddSwitchAccountForm(request.form)
     if form.validate():
         device = DeviceManage(request.form, handle_type='modify_device_account')
         result, code = handle_route(device, del_redis_key='device')
@@ -58,13 +64,12 @@ def delete_device_account():
 def search_device_account():
     form = SearchDeviceAccountForm(request.args)
     if form.validate():
-        form_data = {key: form.data[key] for key in form.data if form.data[key]}
         page = str(form.page.data) if form.page.data else '1'
-        redis_key = 'page_' + page + '_' + str(form_data.items()) + '_device_accounts'
+        redis_key = 'page_' + page + '_' + str(get_form_data(form).items()) + '_device_accounts'
         accounts_data = asyncio.run(get_value(redis_key))
         if accounts_data:
             return jsonify({'msg': 'success', 'data': eval(accounts_data), 'code': 200}), 200
-        device = DeviceManage(form_data, handle_type='search_device_account')
+        device = DeviceManage(get_form_data(form), handle_type='search_device_account')
         result, code = handle_route(device, set_redis_key=redis_key)
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403

@@ -4,21 +4,12 @@ from wtforms.validators import Regexp, IPAddress, DataRequired, AnyOf, Optional
 from . import Config
 
 
-class AddDeviceAccountFrom(Form):
-    device_type = StringField(validators=[
-        DataRequired(message='The device type cannot be empty'),
-        Regexp(regex=r'^(Bras|Switch)$', message='The device type must be Bras or Switch')
-    ])
+class BaseAccountForm(Form):
     place = StringField(validators=[
         DataRequired(message='The place cannot be empty'),
         AnyOf(values=Config.places(), message='The entered place is not within the specified range')
     ])
     device_name = StringField(validators=[DataRequired(message='The device name cannot be empty')])
-    full_name = StringField(validators=[
-        DataRequired(message='The full_name cannot be empty'),
-        Regexp(regex=r'^(b\d-[a-z]-gdzj-[a-z]+|r\d-[a-z]-gdzj-[a-z]+|s\d-[a-z]-gdzj-[a-z]+)$',
-               message='The device full name does not conform to specification')
-    ])
     manage_ip = StringField(validators=[
         DataRequired(message='The manage ip cannot be empty'),
         IPAddress(message='The manage ip does not meet the specification')
@@ -29,6 +20,63 @@ class AddDeviceAccountFrom(Form):
         AnyOf(values=Config.manufactures(), message='The entered manufacturer is not within the specified range')
     ])
     remark = StringField(validators=[Optional()])
+
+
+class BaseModifyAccountForm(Form):
+    device_id = IntegerField(validators=[DataRequired(message='The full_name cannot be empty')])
+    device_type = StringField(validators=[
+        DataRequired(message='The device type cannot be empty'),
+        Regexp(regex=r'^Bras$', message='The device type must be Bras')
+    ])
+    full_name = StringField(validators=[
+        Optional(),
+        Regexp(regex=r'^(b\d-[a-z]-gdzj-[a-z]+|r\d-[a-z]-gdzj-[a-z]+|s\d-[a-z]-gdzj-[a-z]+)$',
+               message='The device full name does not conform to specification')
+    ])
+    place = StringField(validators=[
+        Optional(),
+        AnyOf(values=Config.places(), message='The entered place is not within the specified range')
+    ])
+    device_name = StringField(validators=[Optional()])
+    manage_ip = StringField(validators=[
+        Optional(),
+        IPAddress(message='The manage ip does not meet the specification')
+    ])
+    room_name = StringField(validators=[Optional()])
+    manufacture = StringField(validators=[
+        Optional(),
+        AnyOf(values=Config.manufactures(), message='The entered manufacturer is not within the specified range')
+    ])
+    remark = StringField(validators=[Optional()])
+
+
+class AddSwitchAccountForm(BaseAccountForm):
+    device_type = StringField(validators=[
+        DataRequired(message='The device type cannot be empty'),
+        Regexp(regex=r'^Switch$', message='The device type must be Bras or Switch')
+    ])
+    full_name = StringField(validators=[
+        DataRequired(message='The full_name cannot be empty'),
+        Regexp(regex=r'^s\d-[a-z]-gdzj-[a-z]+$',
+               message='The device full name does not conform to specification')
+    ])
+    loop_port = StringField(validators=[
+        Optional(),
+        Regexp(regex=r'[a-zA-Z0-9/、]+',
+               message='The loop port does not conform to specification')
+    ])
+
+
+class AddBrasAccountFrom(BaseAccountForm):
+    device_type = StringField(validators=[
+        DataRequired(message='The device type cannot be empty'),
+        Regexp(regex=r'^Bras$', message='The device type must be Bras')
+    ])
+    full_name = StringField(validators=[
+        DataRequired(message='The full_name cannot be empty'),
+        Regexp(regex=r'^(b\d-[a-z]-gdzj-[a-z]+|r\d-[a-z]-gdzj-[a-z]+|s\d-[a-z]-gdzj-[a-z]+)$',
+               message='The device full name does not conform to specification')
+    ])
     register_port = StringField(validators=[
         Optional(),
         Regexp(regex=r'^(Eth-Trunk\d+\.\d+|smartgroup\d+\.\d+|xgei-[0-9|/|\.]+)$',
@@ -44,19 +92,36 @@ class AddDeviceAccountFrom(Form):
         Regexp(regex=r'^(Eth-Trunk\d+\.\d+|smartgroup\d+\.\d+|xgei-[0-9|/|\.]+)$',
                message='The iptv port does not conform to specification')
     ])
-    loop_port = StringField(validators=[
-        Optional(),
-        Regexp(regex=r'[a-zA-Z0-9/、]+',
-               message='The loop port does not conform to specification')
-    ])
 
 
 class DeleteDeviceAccountForm(Form):
     device_id = IntegerField(validators=[DataRequired(message='The device id cannot be empty')])
 
 
-class ModifyDeviceAccountForm(AddDeviceAccountFrom):
-    device_id = IntegerField(validators=[DataRequired(message='The full_name cannot be empty')])
+class ModifyBrasAccountForm(Form):
+    register_port = StringField(validators=[
+        Optional(),
+        Regexp(regex=r'^(Eth-Trunk\d+\.\d+|smartgroup\d+\.\d+|xgei-[0-9|/|\.]+)$',
+               message='The register port does not conform to specification')
+    ])
+    band_port = StringField(validators=[
+        Optional(),
+        Regexp(regex=r'^(Eth-Trunk\d+\.\d+|smartgroup\d+\.\d+|xgei-[0-9|/|\.]+)$',
+               message='The band port does not conform to specification')
+    ])
+    iptv_port = StringField(validators=[
+        Optional(),
+        Regexp(regex=r'^(Eth-Trunk\d+\.\d+|smartgroup\d+\.\d+|xgei-[0-9|/|\.]+)$',
+               message='The iptv port does not conform to specification')
+    ])
+
+
+class ModifySwitchAccountForm(BaseModifyAccountForm):
+    loop_port = StringField(validators=[
+        Optional(),
+        Regexp(regex=r'[a-zA-Z0-9/、]+',
+               message='The loop port does not conform to specification')
+    ])
 
 
 class SearchDeviceAccountForm(Form):
@@ -67,7 +132,7 @@ class SearchDeviceAccountForm(Form):
         Optional(),
         IPAddress(message='The manage ip does not meet the specification')
     ])
-    room_name = StringField()
+    room_name = StringField(validators=[Optional()])
     manufacture = StringField(validators=[
         Optional(),
         AnyOf(values=Config.manufactures(), message='The entered manufacturer is not within the specified range')

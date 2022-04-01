@@ -1,6 +1,6 @@
 from apps.models.models import User, Admin
 from apps.models import db
-from apps.models.general import search_data
+from apps.models.general import search_data, handle_modify_info, handle_change_password
 import re
 
 # from apps.models.models import conn_database
@@ -47,14 +47,8 @@ class AdminManager:
 
     def _change_user_password(self):
         if session.query(User).filter_by(username=self._datadict.get('username')).first():
-            try:
-                username, new_pwd = self._datadict.get('username'), self._datadict.get('password')
-                session.query(User).filter_by(username=username).update({User.password: new_pwd})
-                session.commit()
-                return {'message': 'The user password changed successfully', 'result': True}
-            except Exception as e:
-                session.rollback()
-                return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
+            username, new_pwd = self._datadict.get('username'), self._datadict.get('password')
+            return handle_change_password(User, new_pwd, condition={'username': username})
         return {'message': 'The current user does not exist', 'result': False}
 
     def _delete_user(self):
@@ -69,17 +63,7 @@ class AdminManager:
         return {'message': 'The current user does not exist', 'result': False}
 
     def _modify_user_info(self):
-        if session.query(User).filter_by(username=self._datadict.get('username')).first():
-            try:
-                user = session.query(User).filter_by(username=self._datadict.get('username')).first()
-                for key in self._datadict:
-                    setattr(user, key, self._datadict.get(key))
-                session.commit()
-                return {'message': 'The user information modified successfully', 'result': True}
-            except Exception as e:
-                session.rollback()
-                return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
-        return {'message': 'The current user does not exist', 'result': False}
+        return handle_modify_info(User, self._datadict, key='username')
 
     def _get_all_users(self):
         page, all_page, users = search_data(table=User, datadict=self._datadict)
