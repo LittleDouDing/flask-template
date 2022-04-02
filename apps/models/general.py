@@ -89,11 +89,11 @@ def handle_modify_info(table, datadict, key):
     if not obj:
         return {'message': 'The current record does not exist', 'result': False}
     try:
-        user_data = {key: obj.__dict__.get(k) for k in obj.__dict__ if k != '_sa_instance_state'}
-        if len(datadict) <= 1 or set(datadict.items()).issubset(set(user_data.items())):
+        data = {k: obj.__dict__.get(k) for k in obj.__dict__ if k != '_sa_instance_state'}
+        if len(datadict) <= 1 or set(datadict.items()).issubset(set(data.items())):
             return {'message': 'There is currently no need to modify any information', 'result': False}
         for k in datadict:
-            setattr(obj, k, datadict.get(key))
+            setattr(obj, k, datadict.get(k))
         session.commit()
         return {'message': 'The information modified successfully', 'result': True}
     except Exception as e:

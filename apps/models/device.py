@@ -1,6 +1,6 @@
 from apps.models.models import DeviceAccount
 from apps.models import db
-from apps.models.general import search_data
+from apps.models.general import search_data, handle_modify_info
 import re
 
 # from apps.models.models import conn_database
@@ -47,28 +47,7 @@ class DeviceManage:
         return {'message': 'The device ledger already exists', 'result': False}
 
     def _modify_device_account(self):
-        if session.query(DeviceAccount).filter_by(device_id=self._datadict.get('device_id')).first():
-            try:
-                session.query(DeviceAccount).filter_by(device_id=self._datadict.get('device_id')).update({
-                    DeviceAccount.full_name: self._datadict.get('full_name'),
-                    DeviceAccount.device_type: self._datadict.get('device_type'),
-                    DeviceAccount.place: self._datadict.get('place'),
-                    DeviceAccount.device_name: self._datadict.get('device_name'),
-                    DeviceAccount.manage_ip: self._datadict.get('manage_ip'),
-                    DeviceAccount.room_name: self._datadict.get('room_name'),
-                    DeviceAccount.manufacture: self._datadict.get('manufacture'),
-                    DeviceAccount.remark: self._datadict.get('remark'),
-                    DeviceAccount.register_port: self._datadict.get('register_port'),
-                    DeviceAccount.band_port: self._datadict.get('band_port'),
-                    DeviceAccount.iptv_port: self._datadict.get('iptv_port'),
-                    DeviceAccount.loop_port: self._datadict.get('loop_port'),
-                })
-                session.commit()
-                return {'message': 'The device ledger modified successfully', 'result': True}
-            except Exception as e:
-                session.rollback()
-                return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
-        return {'message': 'The current device ledger does not exist', 'result': False}
+        return handle_modify_info(DeviceAccount, self._datadict, key='device_id')
 
     def _delete_device_account(self):
         if session.query(DeviceAccount).filter_by(device_id=self._datadict.get('device_id')).first():
@@ -82,8 +61,6 @@ class DeviceManage:
         return {'message': 'The current equipment ledger does not exist', 'result': False}
 
     def _search_device_account(self):
-        # conditions = {key + '.like': '%' + self._datadict.get(key) + '%' for key in list(self._datadict) if
-        #               self._datadict.get(key) and self._datadict.get(key) != 'page'}
         page, all_page, results = search_data(table=DeviceAccount, datadict=self._datadict)
         all_device = []
         if results:

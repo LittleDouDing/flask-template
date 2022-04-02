@@ -21,10 +21,12 @@ class PortManage:
     def _add_port(self):
         excel_file = xlrd.open_workbook(file_contents=self._datadict.get('file'))
         t = excel_file.sheet_by_index(0)
+        fix_h, h = ['设备全称', '设备名称', '设备类型', '设备端口'], [t.row_values(0)[i].strip() for i in range(4)]
+        if h[0] != fix_h[0] or h[1] != fix_h[1] or h[2] != fix_h[2] or h[3] != fix_h[3]:
+            return {'message': 'The first row of the excel table does not meet the specifications', 'result': False}
         device_data = set([(t.row_values(i)[0], t.row_values(i)[1], t.row_values(i)[2]) for i in range(1, t.nrows)])
         for x in device_data:
-            if not session.query(DeviceAccount).filter_by(full_name=x[0].strip(), device_name=x[1].strip(),
-                                                          device_type=x[2].strip()).first():
+            if not session.query(DeviceAccount).filter_by(full_name=x[0].strip()).first():
                 return {'message': 'The ' + str(x) + ' cannot be queried or the data is incorrect', 'result': False}
         device_ports = {item: [] for item in device_data}
         for i in range(1, t.nrows):

@@ -18,11 +18,11 @@ def add_device_account():
     if user.author == 'check':
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
     if request.form.get('device_type') == 'Bras':
-        form = ModifyBrasAccountForm(request.form)
+        form = AddBrasAccountFrom(request.form)
     else:
-        form = ModifySwitchAccountForm(request.form)
+        form = AddSwitchAccountForm(request.form)
     if form.validate():
-        device = DeviceManage(request.form, handle_type='add_device_account')
+        device = DeviceManage(get_form_data(form), handle_type='add_device_account')
         result, code = handle_route(device, del_redis_key='device')
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
@@ -37,9 +37,9 @@ def modify_device_account():
     if request.form.get('device_type') == 'Bras':
         form = ModifyBrasAccountForm(request.form)
     else:
-        form = AddSwitchAccountForm(request.form)
+        form = ModifySwitchAccountForm(request.form)
     if form.validate():
-        device = DeviceManage(request.form, handle_type='modify_device_account')
+        device = DeviceManage(get_form_data(form), handle_type='modify_device_account')
         result, code = handle_route(device, del_redis_key='device')
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
@@ -53,7 +53,7 @@ def delete_device_account():
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
     form = DeleteDeviceAccountForm(request.form)
     if form.validate():
-        device = DeviceManage(request.form, handle_type='delete_device_account')
+        device = DeviceManage(get_form_data(form), handle_type='delete_device_account')
         result, code = handle_route(device, del_redis_key='device')
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
