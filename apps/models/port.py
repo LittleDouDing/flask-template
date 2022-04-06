@@ -1,6 +1,6 @@
 from apps.models.models import DevicePort, DeviceAccount
 from apps.models import db
-from apps.models.general import search_data
+from apps.models.common import handle_search_info, handle_delete_info
 from apps.validates import Config
 import xlrd
 import re
@@ -14,7 +14,7 @@ class PortManage:
         if handle_type == 'add_port':
             self.data = self._add_port()
         if handle_type == 'get_port':
-            self.data = self._get_port()
+            self.data = self._get_ports()
         if handle_type == 'delete_port':
             self.data = self._delete_port()
 
@@ -44,30 +44,8 @@ class PortManage:
             session.rollback()
             return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
 
-    def _get_port(self):
-        page, all_page, results = search_data(table=DevicePort, datadict=self._datadict)
-        all_port = []
-        if results:
-            for item in results:
-                data = {
-                    'device_name': item.device_name,
-                    'full_name': item.full_name,
-                    'device_type': item.device_type,
-                    'ports': item.ports,
-                    'port_id': item.port_id
-                }
-                all_port.append(data)
-            result = {'current_page': page, 'all_page': all_page, 'ports': all_port}
-            return {'message': 'success', 'result': True, 'data': result}
-        return {'message': 'There are currently no device port', 'result': False}
+    def _get_ports(self):
+        return handle_search_info(DevicePort, self._datadict)
 
     def _delete_port(self):
-        if session.query(DevicePort).filter_by(port_id=self._datadict.get('port_id')).first():
-            try:
-                session.query(DevicePort).filter_by(port_id=self._datadict.get('port_id')).delete()
-                session.commit()
-                return {'message': 'The device port has been successfully deleted', 'result': True}
-            except Exception as e:
-                session.rollback()
-                return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
-        return {'message': 'The current device port does not exist', 'result': False}
+        return handle_delete_info(DevicePort, self._datadict, 'port_id')

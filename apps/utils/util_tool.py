@@ -1,29 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import hashlib
 import apps
-from apps.models import db
 from apps.models import delete_key, get_keys, set_value
 import asyncio
-
-session = db.session
-
-
-class Pager:
-    def __init__(self, current_page, per_items=20):
-        self.current_page = current_page
-        # 规定每一页的个数
-        self.per_items = per_items
-
-    @property
-    def start(self):
-        val = (self.current_page - 1) * self.per_items
-        return val
-
-    @property
-    def end(self):
-        val = self.current_page * self.per_items
-        return val
+import re
 
 
 def get_error_message(errors):
@@ -54,3 +34,8 @@ def handle_route(obj, set_redis_key=None, del_redis_key=None):
             return {'msg': obj.data.get('message'), 'data': obj.data.get('data'), 'code': 200}, 200
         return {'msg': message, 'code': 200}, 200
     return {'msg': message, 'code': 403}, 403
+
+
+def get_table_keys(table, not_contain_keys=None):
+    regex = r'__.+|_sa_.+|' + '|'.join(not_contain_keys) if not_contain_keys else r'__.+|_sa_.+'
+    return [key for key in list(table.__dict__.keys()) if not re.findall(regex, key)]

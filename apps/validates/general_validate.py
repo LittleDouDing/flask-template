@@ -1,6 +1,6 @@
 from wtforms import Form
 from wtforms.fields import StringField, PasswordField
-from wtforms.validators import DataRequired, Length, Regexp, Email, Optional
+from wtforms.validators import DataRequired, Length, Regexp, Email
 
 
 class GetInformationFrom(Form):
@@ -31,18 +31,18 @@ class ChangeUserPasswordForm(ChangePasswordFrom):
 
 class ModifyInfoForm(GetInformationFrom):
     name = StringField(validators=[
-        Optional(),
+        DataRequired(message='The username cannot be empty'),
         Length(min=2, max=30, message='The length of the username must be between 2-30')
     ])
     sex = StringField(validators=[
-        Optional(),
+        DataRequired(message='The user sex cannot be empty'),
         Regexp(regex=r'[1|2]', message='The user gender must be 1 or 2')
     ])
     email = StringField(validators=[
-        Optional(),
+        DataRequired(message='The user email cannot be empty'),
         Email(message='The user email is not a normal email address')
     ])
     phone = StringField(validators=[
-        Optional(),
+        DataRequired(message='The user phone cannot be empty'),
         Regexp(regex=r'1[34578]\d{9}', message='wrong phone number format')
     ])

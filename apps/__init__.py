@@ -1,5 +1,5 @@
 from flask import Flask
-from setting import ProductionConfig
+from setting import DevelopmentConfig
 from apps.routers import general_bp, admin_bp, device_bp, network_bp, port_bp, topology_bp
 from apps.models import db
 from flask_mail import Mail
@@ -11,7 +11,7 @@ mail = Mail()
 def create_app():
     app = Flask(__name__)
     # 加载配置
-    app.config.from_object(ProductionConfig())
+    app.config.from_object(DevelopmentConfig())
     # 添加flask-sqlalchemy配置
     db.init_app(app)
     mail.init_app(app)

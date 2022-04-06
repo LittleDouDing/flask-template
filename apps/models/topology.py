@@ -1,7 +1,6 @@
 from apps.models.models import DeviceTopology, DevicePort
 from apps.models import db
-import re
-import json
+from apps.models.common import handle_add_info
 
 session = db.session
 
@@ -28,13 +27,4 @@ class TopologyManage:
         return {'message': 'The device port does not exist', 'result': False}
 
     def _add_topology(self):
-        if self._datadict.get('topology') not in [x.topology for x in session.query(DeviceTopology).all()]:
-            try:
-                topology = DeviceTopology(topology=self._datadict.get('topology'))
-                session.add(topology)
-                session.commit()
-                return {'message': 'The topology was added successfully', 'result': True}
-            except Exception as e:
-                session.rollback()
-                return {'message': re.findall(r'.+"(.+)"', str(e)), 'result': False}
-        return {'message': 'The topology already exists', 'result': False}
+        return handle_add_info(DeviceTopology, self._datadict, key='topology')

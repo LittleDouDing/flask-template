@@ -1,6 +1,8 @@
 from apps.models.models import User, Admin
 from apps.models import db
-from apps.models.general import search_data, handle_modify_info, handle_change_password
+from apps.models.common import handle_search_info, handle_modify_info, handle_change_password, handle_delete_info, \
+    handle_add_info
+from apps.utils.util_tool import get_table_keys
 import re
 
 # from apps.models.models import conn_database
@@ -26,62 +28,22 @@ class AdminManager:
             self.data = self._check_admin()
 
     def _add_user(self):
-        if not session.query(User).filter_by(username=self._datadict.get('username')).first():
-            try:
-                user = User(
-                    username=self._datadict.get('username'),
-                    password=self._datadict.get('password'),
-                    author=self._datadict.get('author'),
-                    name=self._datadict.get('name'),
-                    sex=self._datadict.get('sex'),
-                    email=self._datadict.get('email'),
-                    phone=self._datadict.get('phone'),
-                )
-                session.add(user)
-                session.commit()
-                return {'message': 'The user added successfully', 'result': True}
-            except Exception as e:
-                session.rollback()
-                return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
-        return {'message': 'The current user already exists, please change the user account', 'result': False}
+        return handle_add_info(User, self._datadict, key='username')
+
+    def _delete_user(self):
+        return handle_delete_info(User, self._datadict, key='username')
+
+    def _modify_user_info(self):
+        return handle_modify_info(User, self._datadict, key='username')
+
+    def _get_all_users(self):
+        return handle_search_info(User, self._datadict)
 
     def _change_user_password(self):
         if session.query(User).filter_by(username=self._datadict.get('username')).first():
             username, new_pwd = self._datadict.get('username'), self._datadict.get('password')
             return handle_change_password(User, new_pwd, condition={'username': username})
         return {'message': 'The current user does not exist', 'result': False}
-
-    def _delete_user(self):
-        if session.query(User).filter_by(username=self._datadict.get('username')).first():
-            try:
-                session.query(User).filter_by(username=self._datadict.get('username')).delete()
-                session.commit()
-                return {'message': 'The user has been successfully deleted', 'result': True}
-            except Exception as e:
-                session.rollback()
-                return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
-        return {'message': 'The current user does not exist', 'result': False}
-
-    def _modify_user_info(self):
-        return handle_modify_info(User, self._datadict, key='username')
-
-    def _get_all_users(self):
-        page, all_page, users = search_data(table=User, datadict=self._datadict)
-        all_user = []
-        if users:
-            for user in users:
-                data = {
-                    'username': user.username,
-                    'name': user.name,
-                    'sex': user.sex,
-                    'email': user.email,
-                    'phone': user.phone,
-                    'author': user.author
-                }
-                all_user.append(data)
-            all_data = {'current_page': page, 'all_page': all_page, 'users': all_user}
-            return {'message': 'success', 'result': True, 'data': all_data}
-        return {'message': 'There are currently no users', 'result': False}
 
     def _check_admin(self):
         if session.query(Admin).filter_by(username=self._datadict.get('username')).first():

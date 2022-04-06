@@ -2,7 +2,8 @@ import asyncio
 from apps.models.models import User, Admin
 from apps.models import db
 from apps.models import get_value, set_value
-import re
+from apps.models.common import handle_change_password, handle_modify_info
+from apps.utils.util_tool import get_table_keys
 
 # from apps.models.models import conn_database
 # session = conn_database()
@@ -28,13 +29,7 @@ class UserManager:
     def _get_userinfo(self):
         user = session.query(self._table).filter_by(username=self._datadict.get('username')).first()
         if user:
-            data = {
-                'username': user.username,
-                'name': user.name,
-                'sex': user.sex,
-                'email': user.email,
-                'phone': user.phone,
-            }
+            data = {key: getattr(user, key) for key in get_table_keys(self._table, not_contain_keys=['password'])}
             if self._table == User:
                 data['author'] = user.author
             return {'message': 'success', 'result': True, 'data': data}
@@ -56,7 +51,7 @@ class UserManager:
             if not session.query(self._table).filter_by(username=username).first():
                 return {'message': 'The current user does not exist', 'result': False}
             if data.get('result'):
-                return {'message': 'New password and old password cannot be the same', 'result': False}
+                return {'message': 'The new password and old password cannot be the same', 'result': False}
         if self._table == User and not data.get('result'):
             return data
         if old_pwd != new_pwd:
@@ -75,39 +70,4 @@ class UserManager:
         return user.author
 
 
-def search_data(table, datadict):
-    page = int(datadict.get('page')) if datadict.get('page') else 1
-    conditions = (table.__dict__.get(k).like('%' + datadict.get(k) + '%') for k in list(datadict) if k != 'page')
-    results = session.query(table).filter(*conditions).paginate(page=page, per_page=20, error_out=False).items
-    count = session.query(table).count()
-    all_page = count // 20 if count % 20 == 0 else count // 20 + 1
-    return page, all_page, results
-
-
-def handle_modify_info(table, datadict, key):
-    obj = session.query(table).filter(getattr(table, key) == datadict.get(key)).first()
-    if not obj:
-        return {'message': 'The current record does not exist', 'result': False}
-    try:
-        data = {k: obj.__dict__.get(k) for k in obj.__dict__ if k != '_sa_instance_state'}
-        if len(datadict) <= 1 or set(datadict.items()).issubset(set(data.items())):
-            return {'message': 'There is currently no need to modify any information', 'result': False}
-        for k in datadict:
-            setattr(obj, k, datadict.get(k))
-        session.commit()
-        return {'message': 'The information modified successfully', 'result': True}
-    except Exception as e:
-        session.rollback()
-        return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
-
-
-def handle_change_password(table, new_pwd, **kwargs):
-    try:
-        condition = kwargs.get('condition')
-        session.query(table).filter_by(**condition).update({table.password: new_pwd})
-        session.commit()
-        return {'message': 'The password reset successfully', 'result': True}
-    except Exception as e:
-        session.rollback()
-        return {'message': re.findall(r'.+"(.+)"', str(e))[0], 'result': False}
 
