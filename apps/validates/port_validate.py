@@ -1,4 +1,4 @@
-from wtforms import Form, StringField, IntegerField, FieldList
+from wtforms import Form, StringField, IntegerField
 from wtforms.validators import Regexp, DataRequired, Optional
 
 

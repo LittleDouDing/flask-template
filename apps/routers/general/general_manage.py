@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
-from apps.utils.util_tool import get_error_message, send_async_email, get_form_data, handle_route
+from apps.utils.util_tool import get_error_message, send_async_email, get_form_data, handle_route, ImageCode
 from apps.models import set_value, get_value, delete_key, set_times
 from apps.models.general import UserManager
 from apps.validates.general_validate import GetInformationFrom, LoginFrom, ChangeUserPasswordForm, ModifyInfoForm, \
@@ -32,6 +32,11 @@ def send_email():
     thread.start()
     asyncio.run(set_value('random_code', str(random_code), expire=120))
     return jsonify({'msg': 'Email verification code sent successfully', 'code': 200}), 200
+
+
+@general_bp.route('/get_code')
+def get_random_code():
+    return ImageCode().get_img_code()
 
 
 @general_bp.app_errorhandler(404)
@@ -73,6 +78,9 @@ def user_login():
     form = LoginFrom(request.form)
     if form.validate():
         form_data = get_form_data(form)
+        random_code = asyncio.run(get_value('image_code'))
+        if not random_code or random_code.lower() != form_data.get('img_code').lower():
+            return jsonify({'msg': 'The verification code is expired or incorrect', 'code': 403}), 403
         user = UserManager(form_data, usertype=usertype, handle_type='user_login')
         if user.data.get('result'):
             asyncio.run(delete_key(form_data.get('username') + '_error_num'))

@@ -3,7 +3,6 @@ from apps.models.models import User, Admin
 from apps.models import db
 from apps.models import get_value, set_value
 from apps.models.common import handle_change_password, handle_modify_info
-from apps.utils.util_tool import get_table_keys
 
 # from apps.models.models import conn_database
 # session = conn_database()
@@ -20,13 +19,14 @@ class UserManager:
         if handle_type == 'user_login':
             self.data = self._user_login()
         if handle_type == 'get_info':
-            self.data = self._get_userinfo()
+            self.data = self._get_user_info()
         if handle_type == 'modify_info':
             self.data = self._modify_information()
         if handle_type == 'get_author':
             self.author = self._get_author()
 
-    def _get_userinfo(self):
+    def _get_user_info(self):
+        from apps.utils.util_tool import get_table_keys
         user = session.query(self._table).filter_by(username=self._datadict.get('username')).first()
         if user:
             data = {key: getattr(user, key) for key in get_table_keys(self._table, not_contain_keys=['password'])}

@@ -6,12 +6,14 @@ from wtforms.validators import DataRequired, Length, Regexp, Email
 class GetInformationFrom(Form):
     username = StringField(validators=[
         DataRequired(message='The user account cannot be empty'),
+        Regexp(regex=r'[a-zA-Z0-9]{4,20}', message='The username is in the wrong format'),
         Length(min=4, max=20, message='The length of the user account must be between 4-20')
     ])
 
 
 class LoginFrom(GetInformationFrom):
     password = PasswordField(validators=[DataRequired(message='The user password cannot be empty')])
+    img_code = StringField(validators=[DataRequired(message='The random code cannot be empty')])
 
 
 class ChangePasswordFrom(GetInformationFrom):
@@ -44,5 +46,5 @@ class ModifyInfoForm(GetInformationFrom):
     ])
     phone = StringField(validators=[
         DataRequired(message='The user phone cannot be empty'),
-        Regexp(regex=r'1[34578]\d{9}', message='wrong phone number format')
+        Regexp(regex=r'1[34578]\d{9}', message='The phone is in the wrong format')
     ])

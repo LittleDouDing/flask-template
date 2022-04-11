@@ -8,9 +8,16 @@ class Config:
     @staticmethod
     def route_regex():
         ip = r'((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}'
-        ip_regexp1 = '^掩码：' + ip + '\n网关：' + ip + r'\nDNS\(主\)：' + ip + r'\nDNS\(备\)：' + ip + '$'
-        ip_regexp2 = '^掩码：' + ip + '\n网关：' + ip + '\nDNS：' + ip + '$'
-        return ip_regexp1 + '|' + ip_regexp2
+        regex = r'^(掩码：' + ip + '|' + '网关：' + ip + '|' + r'DNS\(主\)：' + ip + '|' + r'DNS\(备\)：' + ip + ')$'
+        return regex
+
+    @staticmethod
+    def ipaddress():
+        ipv4 = r'((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}[\s]{0,1}'
+        ipv4_address = ipv4 + '~' + ipv4
+        ipv6_address = r'(([a-fA-F0-9]{1,4}:|){0,7}[::]{0,1}[a-fA-F0-9]{1,4})/\d{0,3}[\s]{0,1}'
+        ip_regex = r'^(' + ipv4_address + '|' + ipv6_address + '){1,5}$'
+        return ip_regex
 
     @staticmethod
     def places():

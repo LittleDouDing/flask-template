@@ -5,7 +5,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from apps.models.port import PortManage
 from apps.models.general import UserManager
 from apps.validates.port_validate import GetPortForm, DeletePortForm
-from apps.utils.util_tool import get_error_message, handle_route, get_form_data
+from apps.utils.util_tool import get_error_message, handle_route, get_form_data, get_user_author
 
 port_bp = Blueprint('port_data', __name__, url_prefix='/api/v1/port')
 
@@ -13,8 +13,7 @@ port_bp = Blueprint('port_data', __name__, url_prefix='/api/v1/port')
 @port_bp.route('/add_port', methods=['POST'])
 @jwt_required()
 def add_port():
-    user = UserManager(datadict={'username': get_jwt_identity()}, handle_type='get_author')
-    if user.author == 'check':
+    if get_user_author() == 'check':
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
     file = request.files.get('file')
     if not file or file.filename.rsplit('.')[1] not in ['xls', 'xlsx']:
@@ -26,8 +25,7 @@ def add_port():
 @port_bp.route('/delete_port', methods=['POST'])
 @jwt_required()
 def delete_port():
-    user = UserManager(datadict={'username': get_jwt_identity()}, handle_type='get_author')
-    if user.author == 'check':
+    if get_user_author() == 'check':
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
     form = DeletePortForm(request.form)
     if form.validate():

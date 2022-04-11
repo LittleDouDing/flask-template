@@ -6,7 +6,7 @@ from apps.models.general import UserManager
 from apps.models import get_value
 from apps.validates.device_validate import AddSwitchAccountForm, AddBrasAccountFrom, DeleteDeviceAccountForm, \
     ModifyBrasAccountForm, ModifySwitchAccountForm, SearchDeviceAccountForm
-from apps.utils.util_tool import get_error_message, handle_route, get_form_data
+from apps.utils.util_tool import get_error_message, handle_route, get_form_data, get_user_author
 
 device_bp = Blueprint('device_data', __name__, url_prefix='/api/v1/device')
 
@@ -14,8 +14,7 @@ device_bp = Blueprint('device_data', __name__, url_prefix='/api/v1/device')
 @device_bp.route('/add_account', methods=['POST'])
 @jwt_required()
 def add_device_account():
-    user = UserManager(datadict={'username': get_jwt_identity()}, handle_type='get_author')
-    if user.author == 'check':
+    if get_user_author() == 'check':
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
     if request.form.get('device_type') == 'Bras':
         form = AddBrasAccountFrom(request.form)
@@ -31,8 +30,7 @@ def add_device_account():
 @device_bp.route('/modify_account', methods=['POST'])
 @jwt_required()
 def modify_device_account():
-    user = UserManager(datadict={'username': get_jwt_identity()}, handle_type='get_author')
-    if user.author == 'check':
+    if get_user_author() == 'check':
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
     if request.form.get('device_type') == 'Bras':
         form = ModifyBrasAccountForm(request.form)
@@ -48,8 +46,7 @@ def modify_device_account():
 @device_bp.route('/delete_account', methods=['POST'])
 @jwt_required()
 def delete_device_account():
-    user = UserManager(datadict={'username': get_jwt_identity()}, handle_type='get_author')
-    if user.author == 'check':
+    if get_user_author() == 'check':
         return jsonify({'msg': 'The current user does not have permission to add an account', 'code': 403}), 403
     form = DeleteDeviceAccountForm(request.form)
     if form.validate():
