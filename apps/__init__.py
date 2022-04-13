@@ -1,6 +1,6 @@
 from flask import Flask
 from setting import DevelopmentConfig
-from apps.routers import general_bp, admin_bp, device_bp, network_bp, port_bp, topology_bp
+from apps.routers import general_bp, admin_bp, device_bp, network_bp, port_bp, topology_bp, multiple_bp
 from apps.models import db
 from flask_mail import Mail
 from flask_jwt_extended import JWTManager
@@ -23,4 +23,5 @@ def create_app():
     app.register_blueprint(network_bp)
     app.register_blueprint(port_bp)
     app.register_blueprint(topology_bp)
+    app.register_blueprint(multiple_bp)
     return app

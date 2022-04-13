@@ -3,6 +3,8 @@
 import apps
 from apps.models import delete_key, get_keys, set_value
 from apps.models.general import UserManager
+from wtforms import ValidationError
+from apps.validates import Config
 from flask_jwt_extended import get_jwt_identity
 from flask import make_response
 import asyncio
@@ -41,6 +43,23 @@ def handle_route(obj, set_redis_key=None, del_redis_key=None):
             return {'msg': obj.data.get('message'), 'data': obj.data.get('data'), 'code': 200}, 200
         return {'msg': message, 'code': 200}, 200
     return {'msg': message, 'code': 403}, 403
+
+
+def handle_filed(filed, filed_name, data, regex, is_topology=False):
+    if not isinstance(filed.data, dict):
+        raise ValidationError('The data format of the ' + filed_name + ' is not an dict')
+    for item in data.items():
+        if is_topology:
+            # 如果是topology
+            if not isinstance(item[1], list):
+                raise ValidationError('The data format of the ' + item[1] + ' is not a list')
+            for x in item[1]:
+                if not re.match(regex, x):
+                    raise ValidationError('The device port ' + x + ' does not conform to the specification')
+        else:
+            keys = Config.keys()
+            if not re.match(keys, item[0]) or not isinstance(item[1], str) or not re.match(regex, item[1]):
+                raise ValidationError('The data format of the ' + str(item) + ' is not a legal data')
 
 
 def get_user_author():

@@ -10,3 +10,4 @@ from .deviceAccount.device_manage import device_bp
 from .networkAccount.network_account import network_bp
 from .devicePort.port_manage import port_bp
 from .deviceTopology.topology_manage import topology_bp
+from .multipleAccount.multiple_manage import multiple_bp

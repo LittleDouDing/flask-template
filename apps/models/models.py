@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import Date, JSON, String, Column, Sequence, Integer, ForeignKey
+from sqlalchemy import Date, JSON, String, Column, Sequence, Integer, ForeignKey, Index
 from sqlalchemy.dialects.mysql import VARCHAR, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -70,18 +70,25 @@ class DeviceAccount(Base):
 class MultipleAccount(Base):
     __tablename__ = 'multiple_account'
 
-    multiple_name = Column(String(255), primary_key=True, comment='多元化名称')
+    __table_args__ = (
+        Index('place_vlan', 'place', 'band_vlan', 'iptv_vlan', 'voice_vlan', unique=True),
+    )
+
+    multiple_id = Column(INTEGER(6), primary_key=True, comment='多元化id')
+    multiple_name = Column(VARCHAR(50), nullable=False, unique=True, comment='多元化名称')
+    place = Column(VARCHAR(8), nullable=False, comment='所属区域')
+    band_vlan = Column(VARCHAR(4), comment='宽带vlan')
+    iptv_vlan = Column(VARCHAR(4), comment='IPTV vlan')
+    voice_vlan = Column(VARCHAR(4), comment='语音vlan')
     multiple_ip = Column(JSON, nullable=False, comment='主备用登录ip')
-    band_vlan = Column(String(255), comment='宽带vlan')
-    iptv_vlan = Column(String(255), comment='IPTV vlan')
-    voice_vlan = Column(String(255), comment='语音vlan')
     manage_vlan = Column(JSON, nullable=False, comment='主备用网管vlan')
     use_way = Column(JSON, nullable=False, comment='主备用使用方式')
     topology = Column(JSON, nullable=False, comment='主备用拓扑')
-    device_ip = Column(JSON, nullable=False, comment='主备用相关设备ip')
-    remark = Column(String(500), comment='备注信息')
-    monotony = Column(String(255), comment='调单号')
-    circuit_code = Column(String(255), comment='电路编号')
+    access_information = Column(String(250), nullable=False, comment='接入端信息')
+    relate_devices = Column(JSON, nullable=False, comment='主备用相关设备ip')
+    remark = Column(VARCHAR(250), comment='备注信息')
+    monotony = Column(VARCHAR(30), comment='调单号')
+    circuit_code = Column(VARCHAR(30), comment='电路编号')
 
 
 class NetworkAccount(Base):

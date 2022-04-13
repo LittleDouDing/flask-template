@@ -1,12 +1,15 @@
 from wtforms import Form, StringField, IntegerField
-from wtforms.validators import DataRequired, Regexp, Optional
+from wtforms.validators import DataRequired, Regexp, Optional, Length
 from wtforms import ValidationError
 from . import Config
 import re
 
 
 class GetDevicePortForm(Form):
-    device_name = StringField(validators=[DataRequired(message='The device name cannot be empty')])
+    device_name = StringField(validators=[
+        DataRequired(message='The device name cannot be empty'),
+        Length(max=30, message='The max length of device name is 30')
+    ])
     device_type = StringField(validators=[
         DataRequired(message='The device type cannot be empty'),
         Regexp(regex=r'^(Bras|Switch)$', message='The device type must be Bras or Switch')
@@ -14,7 +17,10 @@ class GetDevicePortForm(Form):
 
 
 class GetTopologyForm(Form):
-    device_name = StringField(validators=[Optional()])
+    device_name = StringField(validators=[
+        Optional(),
+        Length(max=30, message='The max length of device name is 30')
+    ])
     page = IntegerField(validators=[
         Optional(),
         DataRequired(message='The number of pages must be an integer')
@@ -33,9 +39,7 @@ class AddTopologyForm(Form):
         if not isinstance(filed.data, list):
             raise ValidationError('The data format of the topology is not an array')
         for item in self.topology.data:
-            port_regex = re.sub(r'[\^$]', '', Config.port_regex())
-            port_regex = r'^.+:' + port_regex + '$'
-            if not re.findall(port_regex, item):
+            if not re.findall(Config.device_port(), item):
                 raise ValidationError('The device port ' + item + ' does not conform to the specification')
 
 
