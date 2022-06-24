@@ -1,5 +1,5 @@
-from wtforms import StringField, Form
-from wtforms.validators import DataRequired, Regexp, AnyOf, Optional, IPAddress, Length
+from wtforms import StringField, Form, DateField
+from wtforms.validators import DataRequired, Regexp, AnyOf, Optional, Length
 from wtforms import ValidationError
 import re
 from . import Config
@@ -20,18 +20,20 @@ class AddNetworkAccountForm(Form):
     ])
     topology = StringField(DataRequired(message='The topology cannot be empty'))
     access_information = StringField(validators=[Optional()])
+    relate_device = StringField(validators=[DataRequired(message='The relate device cannot be empty')])
     bandwidth = StringField(validators=[
         Optional(),
-        Regexp(regex=r'(\d+M|\d+M/\d+M)', message='The end bandwidth does not conform to the specification')
+        Regexp(regex=r'^(\d+M|\d+M/\d+M)$', message='The end bandwidth does not conform to the specification')
     ])
+    business_type = StringField(validators=[Optional()])
     user_address = StringField(validators=[Optional()])
     username = StringField(validators=[
         Optional(),
         Length(min=4, max=20, message='The length of the user name must be between 4-20')
     ])
-    phone = StringField(validators=[
+    user_phone = StringField(validators=[
         Optional(),
-        Regexp(regex=r'1[34578]\d{9}', message='The phone is in the wrong format')
+        Regexp(regex=r'^1[34578]\d{9}$', message='The phone is in the wrong format')
     ])
     user_manager = StringField(validators=[
         Optional(),
@@ -39,19 +41,19 @@ class AddNetworkAccountForm(Form):
     ])
     manager_phone = StringField(validators=[
         Optional(),
-        Regexp(regex=r'1[34578]\d{9}', message='The phone is in the wrong format')
+        Regexp(regex=r'^1[34578]\d{9}$', message='The phone is in the wrong format')
     ])
     remark = StringField(validators=[Optional()])
     finnish_time = StringField(validators=[
         Optional(),
-        Regexp(regex=r'202[2-9]/(0[1-9]|1[0-2])/(0[1-9]|[1-2][0-9]|3[0-1])$')
+        # Regexp(regex=r'^202[2-9]/(0[1-9]|1[0-2])/(0[1-9]|[1-2][0-9]|3[0-1])$')
     ])
     product_code = StringField(validators=[Optional()])
     monotony = StringField(validators=[Optional()])
     circuit_code = StringField(validators=[Optional()])
     is_open = StringField(validators=[
         DataRequired(message='The 80 port cannot be empty'),
-        Regexp(regex=r'(0|1)', message='The 80 port must be 0 or 1')
+        Regexp(regex=r'^(0|1)$', message='The 80 port must be 0 or 1')
     ])
 
     def validate_ip_address(self, filed):  # 自定义验证器：validate_字段名

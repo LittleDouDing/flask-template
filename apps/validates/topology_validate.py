@@ -29,7 +29,10 @@ class GetTopologyForm(Form):
 
 class ModifyTopologyForm(Form):
     topology_id = IntegerField(validators=[DataRequired(message='The topology id cannot be empty')])
-    topology = StringField(validators=[DataRequired('The topology cannot be empty')])
+    topology = StringField(validators=[
+        DataRequired('The topology cannot be empty'),
+        Length(max=500, message='The max length of topology is 500')
+    ])
 
 
 class AddTopologyForm(Form):
@@ -38,6 +41,8 @@ class AddTopologyForm(Form):
     def validate_topology(self, filed):  # 自定义验证器：validate_字段名
         if not isinstance(filed.data, list):
             raise ValidationError('The data format of the topology is not an array')
+        if len(filed.data) % 2 != 0:
+            raise ValidationError('The data length does not meet the specification')
         for item in self.topology.data:
             if not re.findall(Config.device_port(), item):
                 raise ValidationError('The device port ' + item + ' does not conform to the specification')

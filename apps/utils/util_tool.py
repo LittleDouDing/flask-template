@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import apps
+import os
+from extend import mail
+from werkzeug.utils import secure_filename
 from apps.models import delete_key, get_keys, set_value
-from apps.models.general import UserManager
-from wtforms import ValidationError
-from apps.validates import Config
-from flask_jwt_extended import get_jwt_identity
 from flask import make_response
 import asyncio
+import uuid
 import re
 from io import BytesIO
 import random
@@ -22,7 +21,7 @@ def get_error_message(errors):
 def send_async_email(msg):
     import app
     with app.app.app_context():
-        apps.mail.send(msg)
+        mail.send(msg)
 
 
 def delete_relate_keys(relate_key):
@@ -34,59 +33,43 @@ def get_form_data(form):
     return {key: form.data[key] for key in form.data if form.data[key]}
 
 
-def handle_route(obj, set_redis_key=None, del_redis_key=None):
-    message = obj.data.get('message')
-    if obj.data.get('result'):
-        asyncio.run(set_value(set_redis_key, str(obj.data.get('data')))) if set_redis_key else None
-        delete_relate_keys(del_redis_key) if del_redis_key else None
-        if obj.data.get('data'):
-            return {'msg': obj.data.get('message'), 'data': obj.data.get('data'), 'code': 200}, 200
-        return {'msg': message, 'code': 200}, 200
-    return {'msg': message, 'code': 403}, 403
+def check_uuid(image_id):
+    try:
+        return uuid.UUID(image_id).version in [1, 2, 3, 4]
+    except ValueError:
+        return False
 
 
-def handle_filed(filed, filed_name, data, regex, is_topology=False):
-    if not isinstance(filed.data, dict):
-        raise ValidationError('The data format of the ' + filed_name + ' is not an dict')
-    for item in data.items():
-        if is_topology:
-            # 如果是topology
-            if not isinstance(item[1], list):
-                raise ValidationError('The data format of the ' + item[1] + ' is not a list')
-            for x in item[1]:
-                if not re.match(regex, x):
-                    raise ValidationError('The device port ' + x + ' does not conform to the specification')
-        else:
-            keys = Config.keys()
-            if not re.match(keys, item[0]) or not isinstance(item[1], str) or not re.match(regex, item[1]):
-                raise ValidationError('The data format of the ' + str(item) + ' is not a legal data')
-
-
-def get_user_author():
-    user = UserManager(datadict={'username': get_jwt_identity()}, handle_type='get_author')
-    return user.author
+def random_filename(filename):
+    ext = os.path.splitext(filename)[1]
+    new_filename = uuid.uuid4().hex + ext
+    filename = secure_filename(new_filename)
+    return filename
 
 
 def get_table_keys(table, not_contain_keys=None):
-    regex = r'__.+|_sa_.+|' + '|'.join(not_contain_keys) if not_contain_keys else r'__.+|_sa_.+'
+    regex = r'device_topology|device_account|__.+|_sa_.+|.+_$|.+\d$'
+    regex = r'|'.join(not_contain_keys) + regex if not_contain_keys else regex
     return [key for key in list(table.__dict__.keys()) if not re.findall(regex, key)]
 
 
-def get_topology(result):
-    topology = ''
-    for index, item in enumerate(result['topology']):
-        device, port = item.split(':')
-        if index % 2 == 0:
-            if device in topology:
-                topology += '(' + port + ')'
-            else:
-                topology += device + '(' + port + ')'
-        else:
-            topology += '<----->' + '(' + port + ')' + device
-    return topology
+def get_database_err(e):
+    err_msg = str(e.args[0]).replace('\\', '')
+    if 'Data too long' in err_msg:
+        params = re.findall(r".+'(.+)'.+", err_msg)[0]
+        err_msg = re.sub(r"column '(.+)'", e.__dict__.get('params')[params], err_msg)
+    if 'Duplicate' in err_msg:
+        params = re.findall(r".+'(.+)'.+'.+'", err_msg)[0]
+        err_msg = '(pymysql.err.IntegrityError) (1062, Duplicate key for ' + params + ')'
+    if 'foreign key' in err_msg:
+        err_msg = 'To trigger a foreign key constraint, please ensure that the record exists in the main table'
+    return err_msg
 
 
 class ImageCode:
+    def __init__(self, image_id):
+        self.image_id = image_id
+
     @staticmethod
     def _rnd_color():
         # 随机颜色
@@ -138,5 +121,5 @@ class ImageCode:
         response = make_response(buf_str)
         response.headers['Content-Type'] = 'image/gif'
         # 将验证码字符串储存在redis中
-        asyncio.run(set_value('image_code', code, expire=120))
+        asyncio.run(set_value(self.image_id, code, expire=120))
         return response

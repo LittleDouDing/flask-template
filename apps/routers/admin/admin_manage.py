@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required
 from apps.validates.admin_validate import AddUserForm, GetAllUserForm, DeleteUserForm, ChangeUserPasswordForm, \
     ChangeUserInfoForm
-from apps.models.admin import AdminManager
-from apps.utils.util_tool import get_error_message, handle_route, get_form_data
+from apps.database.admin import AdminManager
+from apps.utils.util_tool import get_error_message, get_form_data
+from apps.utils.route_tool import handle_route
+from decorators import admin_required
 from apps.models import get_value
 import asyncio
 
@@ -11,11 +13,9 @@ admin_bp = Blueprint('admin_data', __name__, url_prefix='/api/v1/admin')
 
 
 @admin_bp.route('/add_user', methods=["POST"])
+@admin_required()
 @jwt_required()
 def admin_add_user():
-    admin = AdminManager({'username': get_jwt_identity()}, handle_type='check_admin')
-    if not admin.data.get('result'):
-        return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = AddUserForm(request.form)
     if form.validate():
         user = AdminManager(get_form_data(form), handle_type='add_user')
@@ -25,11 +25,9 @@ def admin_add_user():
 
 
 @admin_bp.route('/delete_user', methods=["POST"])
+@admin_required()
 @jwt_required()
 def admin_delete_user():
-    admin = AdminManager({'username': get_jwt_identity()}, handle_type='check_admin')
-    if not admin.data.get('result'):
-        return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = DeleteUserForm(request.form)
     if form.validate():
         user = AdminManager(get_form_data(form), handle_type='delete_user')
@@ -39,11 +37,9 @@ def admin_delete_user():
 
 
 @admin_bp.route('/change_user_password', methods=["POST"])
+@admin_required()
 @jwt_required()
 def admin_change_user_password():
-    admin = AdminManager({'username': get_jwt_identity()}, handle_type='check_admin')
-    if not admin.data.get('result'):
-        return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = ChangeUserPasswordForm(request.form)
     if form.validate():
         user = AdminManager(get_form_data(form), handle_type='change_user_password')
@@ -53,11 +49,9 @@ def admin_change_user_password():
 
 
 @admin_bp.route('/modify_user_info', methods=["POST"])
+@admin_required()
 @jwt_required()
 def admin_modify_user_info():
-    admin = AdminManager({'username': get_jwt_identity()}, handle_type='check_admin')
-    if not admin.data.get('result'):
-        return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = ChangeUserInfoForm(request.form)
     if form.validate():
         user = AdminManager(get_form_data(form), handle_type='modify_user_info')
@@ -67,11 +61,9 @@ def admin_modify_user_info():
 
 
 @admin_bp.route('/all_users', methods=["GET"])
+@admin_required()
 @jwt_required()
 def get_all_users():
-    admin = AdminManager({'username': get_jwt_identity()}, handle_type='check_admin')
-    if not admin.data.get('result'):
-        return {'msg': admin.data.get('message'), 'code': 403}, 403
     form = GetAllUserForm(request.args)
     if form.validate():
         page = str(form.page.data) if form.page.data else '1'

@@ -6,18 +6,28 @@ from wtforms.validators import DataRequired, Length, Regexp, Email
 class GetInformationFrom(Form):
     username = StringField(validators=[
         DataRequired(message='The user account cannot be empty'),
-        Regexp(regex=r'[a-zA-Z0-9]{4,20}', message='The username is in the wrong format'),
+        Regexp(regex=r'^\w{4,20}$', message='The username is in the wrong format'),
         Length(min=4, max=20, message='The length of the user account must be between 4-20')
     ])
 
 
 class LoginFrom(GetInformationFrom):
-    password = PasswordField(validators=[DataRequired(message='The user password cannot be empty')])
-    img_code = StringField(validators=[DataRequired(message='The random code cannot be empty')])
+    password = PasswordField(validators=[
+        DataRequired(message='The user password cannot be empty'),
+        Length(max=255, message='The max length of password is 255')
+    ])
+    img_code = StringField(validators=[
+        DataRequired(message='The random code cannot be empty'),
+        Length(min=4, max=4, message='The length of image code must be 4')
+    ])
+    image_id = StringField(validators=[DataRequired(message='The image id cannot be empty')])
 
 
 class ChangePasswordFrom(GetInformationFrom):
-    password = PasswordField(validators=[DataRequired(message='The password cannot be empty')])
+    password = PasswordField(validators=[
+        DataRequired(message='The password cannot be empty'),
+        Length(max=255, message='The max length of password is 255')
+    ])
 
 
 class ChangeAdminPasswordForm(ChangePasswordFrom):
@@ -28,7 +38,10 @@ class ChangeAdminPasswordForm(ChangePasswordFrom):
 
 
 class ChangeUserPasswordForm(ChangePasswordFrom):
-    new_password = PasswordField(validators=[DataRequired(message='The new password cannot be empty')])
+    new_password = PasswordField(validators=[
+        DataRequired(message='The new password cannot be empty'),
+        Length(max=255, message='The max length of new password is 255')
+    ])
 
 
 class ModifyInfoForm(GetInformationFrom):
@@ -38,7 +51,7 @@ class ModifyInfoForm(GetInformationFrom):
     ])
     sex = StringField(validators=[
         DataRequired(message='The user sex cannot be empty'),
-        Regexp(regex=r'[1|2]', message='The user gender must be 1 or 2')
+        Regexp(regex=r'^[1|2]$', message='The user gender must be 1 or 2')
     ])
     email = StringField(validators=[
         DataRequired(message='The user email cannot be empty'),
@@ -46,5 +59,5 @@ class ModifyInfoForm(GetInformationFrom):
     ])
     phone = StringField(validators=[
         DataRequired(message='The user phone cannot be empty'),
-        Regexp(regex=r'1[34578]\d{9}', message='The phone is in the wrong format')
+        Regexp(regex=r'^1[34578]\d{9}$', message='The phone is in the wrong format')
     ])

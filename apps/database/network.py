@@ -1,9 +1,6 @@
 from apps.models.models import NetworkAccount
 from apps.models import db
-from apps.models.common import handle_search_info, handle_modify_info, handle_delete_info, handle_add_info
-
-# from apps.models.models import conn_database
-# session = conn_database()
+from apps.utils.database_tool import handle_search_info, handle_modify_info, handle_delete_info, handle_add_info
 
 session = db.session
 
@@ -21,7 +18,7 @@ class NetworkManage:
             self.data = self._search_network_account()
 
     def _add_network_account(self):
-        return handle_add_info(NetworkAccount, self._datadict, 'start_ip')
+        return handle_add_info(NetworkAccount, self._datadict, keys=['ip_address'])
 
     def _modify_network_account(self):
         return handle_modify_info(NetworkAccount, self._datadict, key='network_id')

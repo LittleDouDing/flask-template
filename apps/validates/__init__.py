@@ -15,6 +15,11 @@ class Config:
         return regex
 
     @staticmethod
+    def bras_full_name():
+        regex = r'^(b\d-[a-z]-gdzj-[a-z]+|r\d-[a-z]-gdzj-[a-z]+|s\d-[a-z]-gdzj-[a-z]+)$'
+        return regex
+
+    @staticmethod
     def keys():
         return r'^(major|backup_[1-5])$'
 
@@ -50,3 +55,7 @@ class Config:
     @staticmethod
     def manufactures():
         return ['华为', '中兴', '华三', '思科', '烽火']
+
+    @staticmethod
+    def region():
+        return ['汇聚以上设备', '接入交换机', '一级交换机', '湛江城域网']

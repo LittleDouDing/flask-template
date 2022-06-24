@@ -28,6 +28,9 @@ class Config:
     MAIL_DEFAULT_SENDER = ('LedgerSystem', 'little_bean2022@163.com')
     MAIL_USERNAME = 'little_bean2022@163.com'
     MAIL_PASSWORD = "UUXYDJQPGBNFSYXM"
+    # 文件配置
+    MAX_CONTENT_LENGTH = 10 * 1024 * 1024
+    UPLOAD_EXTENSIONS = ['.xls', '.csv', '.xlsx']
 
 
 class DevelopmentConfig(Config):

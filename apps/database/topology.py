@@ -1,8 +1,8 @@
 from apps.models.models import DeviceTopology, DevicePort
 from apps.models import db
-from apps.models.common import handle_add_info
-from apps.models.common import handle_search_info, handle_modify_info, handle_delete_info
-from apps.utils.util_tool import get_topology
+from apps.utils.database_tool import handle_add_info
+from apps.utils.database_tool import handle_modify_info, handle_delete_info, handle_search_topology
+
 
 session = db.session
 
@@ -35,15 +35,10 @@ class TopologyManage:
         return {'message': 'The device port does not exist', 'result': False}
 
     def _search_topology(self):
-        data = handle_search_info(DeviceTopology, {'topology': self._datadict.get('device_name')})
-        results = data.get('data').get('results')
-        for index, result in enumerate(results):
-            data['data']['results'][index]['topology_list'] = result.get('topology')
-            data['data']['results'][index]['topology'] = get_topology(result)
-        return data
+        return handle_search_topology(self._datadict)
 
     def _add_topology(self):
-        return handle_add_info(DeviceTopology, self._datadict, key='topology')
+        return handle_add_info(DeviceTopology, self._datadict, keys=['topology'])
 
     def _modify_topology(self):
         return handle_modify_info(DeviceTopology, self._datadict, key='topology_id')

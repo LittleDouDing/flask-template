@@ -5,14 +5,7 @@
 from aioredis.client import Redis
 from flask_sqlalchemy import SQLAlchemy
 
-# import pymysql
-
 db = SQLAlchemy()
-
-
-# def connect_mysql():
-#     conn = pymysql.connect(host='127.0.0.1', port=3306, user="root", passwd="Lin123456", db="ledgersystem")
-#     return conn
 
 
 async def connect_redis():
