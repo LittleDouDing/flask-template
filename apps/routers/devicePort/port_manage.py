@@ -30,8 +30,8 @@ def add_port():
 @jwt_required()
 def import_device_port():
     uploaded_file = request.files.get('file')
-    device = PortManage(upload_file=uploaded_file, handle_type='import_device_port')
-    result, code = handle_route(device, del_redis_key='port')
+    port = PortManage(upload_file=uploaded_file, handle_type='import_device_port')
+    result, code = handle_route(port, del_redis_key='port')
     return jsonify(result), code
 
 
@@ -62,8 +62,8 @@ def delete_port():
 def modify_port():
     form = ModifyPortForm(request.form)
     if form.validate():
-        device = PortManage(datadict=get_form_data(form), handle_type='modify_port')
-        result, code = handle_route(device, del_redis_key='port')
+        port = PortManage(datadict=get_form_data(form), handle_type='modify_port')
+        result, code = handle_route(port, del_redis_key='port')
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 

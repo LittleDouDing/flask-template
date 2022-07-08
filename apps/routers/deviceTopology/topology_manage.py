@@ -3,11 +3,11 @@ from flask_jwt_extended import jwt_required
 from apps.database.topology import TopologyManage
 from werkzeug.datastructures import ImmutableMultiDict
 from apps.models import get_value
-from apps.validates.topology_validate import GetDevicePortForm, AddTopologyForm, GetTopologyForm, ModifyTopologyForm, \
-    DeleteTopologyForm
+from apps.validates.topology_validate import AddTopologyForm, GetTopologyForm, ModifyTopologyForm, DeleteTopologyForm, \
+    GetDevicePortForm
 from apps.utils.util_tool import get_error_message, get_form_data
 from apps.utils.route_tool import handle_route
-from decorators import permission_required
+from decorators import permission_required, file_required
 import asyncio
 
 topology_bp = Blueprint('topology_data', __name__, url_prefix='/api/v1/topology')
@@ -68,12 +68,32 @@ def search_topology():
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
 
 
-@topology_bp.route('/search_port', methods=['GET'])
+@topology_bp.route('/import_topology', methods=['POST'])
+@file_required()
+@permission_required('configure')
 @jwt_required()
-def search_device_port():
+def import_topology():
+    uploaded_file = request.files.get('file')
+    topology = TopologyManage(upload_file=uploaded_file, handle_type='import_topology')
+    result, code = handle_route(topology, del_redis_key='device')
+    return jsonify(result), code
+
+
+@topology_bp.route('/export_topology', methods=['GET'])
+@jwt_required()
+def export_topology():
+    topology = TopologyManage(handle_type='export_topology')
+    if topology.data.get('result'):
+        return topology.data.get('data')
+    return jsonify({'msg': topology.data.get('message'), 'code': 403}), 403
+
+
+@topology_bp.route('/get_topology', methods=['GET'])
+@jwt_required()
+def get_topology():
     form = GetDevicePortForm(request.args)
     if form.validate():
-        device_port = TopologyManage(datadict=get_form_data(form), handle_type='search_device_port')
+        device_port = TopologyManage(datadict=get_form_data(form), handle_type='get_topology')
         result, code = handle_route(device_port)
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403

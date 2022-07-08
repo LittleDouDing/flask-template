@@ -7,7 +7,6 @@ class GetInformationFrom(Form):
     username = StringField(validators=[
         DataRequired(message='The user account cannot be empty'),
         Regexp(regex=r'^\w{4,20}$', message='The username is in the wrong format'),
-        Length(min=4, max=20, message='The length of the user account must be between 4-20')
     ])
 
 
@@ -47,7 +46,7 @@ class ChangeUserPasswordForm(ChangePasswordFrom):
 class ModifyInfoForm(GetInformationFrom):
     name = StringField(validators=[
         DataRequired(message='The username cannot be empty'),
-        Length(min=2, max=30, message='The length of the username must be between 2-30')
+        Regexp(regex=r'^\w{4,20}$', message='The username is in the wrong format')
     ])
     sex = StringField(validators=[
         DataRequired(message='The user sex cannot be empty'),

@@ -32,7 +32,7 @@ def get_user_info():
 
 @general_bp.route('/admin/login', methods=['POST'])
 @general_bp.route('/user/login', methods=['POST'])
-@random_code_required()
+# @random_code_required()
 @times_limited(limit_type='error_num')
 @times_limited(limit_type='login_num')
 def user_login():

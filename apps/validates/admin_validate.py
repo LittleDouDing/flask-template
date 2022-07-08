@@ -28,7 +28,10 @@ class BaseUserForm(Form):
 
 
 class AddUserForm(BaseUserForm):
-    password = PasswordField(validators=[DataRequired(message='The user password cannot be empty')])
+    password = PasswordField(validators=[
+        DataRequired(message='The user password cannot be empty'),
+        Length(min=10, max=255, message='The length of password must in 10 to 255')
+    ])
     author = StringField(validators=[
         DataRequired(message='The user author cannot be empty'),
         Regexp(regex='^(check|configure)$', message='The user permissions can only be check or configure')
@@ -39,7 +42,6 @@ class DeleteUserForm(Form):
     username = StringField(validators=[
         DataRequired(message='The user account cannot be empty'),
         Regexp(regex=r'^\w{4,20}$', message='The username is in the wrong format'),
-        Length(min=4, max=20, message='The length of the user account must be between 4-20')
     ])
 
 
@@ -54,7 +56,6 @@ class ChangeUserPasswordForm(Form):
     username = StringField(validators=[
         DataRequired(message='The user account cannot be empty'),
         Regexp(regex=r'^\w{4,20}$', message='The username is in the wrong format'),
-        Length(min=4, max=20, message='The length of the user account must be between 4-20')
     ])
     password = PasswordField(validators=[DataRequired(message='The user password cannot be empty')])
 
@@ -67,7 +68,6 @@ class GetAllUserForm(Form):
     username = StringField(validators=[
         Optional(),
         Regexp(regex=r'^\w{4,20}$', message='The username is in the wrong format'),
-        Length(min=4, max=20, message='The length of the user account must be between 4-20')
     ])
     name = StringField(validators=[
         Optional(),

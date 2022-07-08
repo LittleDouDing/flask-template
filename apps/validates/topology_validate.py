@@ -12,7 +12,11 @@ class GetDevicePortForm(Form):
     ])
     device_type = StringField(validators=[
         DataRequired(message='The device type cannot be empty'),
-        Regexp(regex=r'^(Bras|Switch)$', message='The device type must be Bras or Switch')
+        Regexp(regex=r'^Switch|OLT$', message='The device type must be Switch or OLT'),
+    ])
+    port = StringField(validators=[
+        Optional(),
+        Length(max=30, message='The max length of port is 30')
     ])
 
 

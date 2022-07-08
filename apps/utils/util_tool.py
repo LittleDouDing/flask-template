@@ -30,7 +30,14 @@ def delete_relate_keys(relate_key):
 
 
 def get_form_data(form):
-    return {key: form.data[key] for key in form.data if form.data[key]}
+    data_dict = {}
+    for key in form.data:
+        if form.data[key] and type(form.data[key]) == str or type(form.data[key]) == list:
+            data_dict[key] = str(form.data[key]).replace("'", '"').strip()
+        else:
+            data_dict[key] = form.data[key]
+    return data_dict
+    # return {key: form.data[key] for key in form.data if form.data[key]}
 
 
 def check_uuid(image_id):
@@ -49,7 +56,7 @@ def random_filename(filename):
 
 def get_table_keys(table, not_contain_keys=None):
     regex = r'device_topology|device_account|__.+|_sa_.+|.+_$|.+\d$'
-    regex = r'|'.join(not_contain_keys) + regex if not_contain_keys else regex
+    regex = r'|'.join(not_contain_keys) + '|' + regex if not_contain_keys else regex
     return [key for key in list(table.__dict__.keys()) if not re.findall(regex, key)]
 
 

@@ -1,16 +1,14 @@
 import re
 import asyncio
 from apps.models import db
-from apps.database.port import DevicePort
 from wtforms import ValidationError
 from apps.validates import Config
 from apps.models import set_value
-from apps.utils.util_tool import delete_relate_keys
 
 
 def get_topology(result):
     topology = ''
-    for index, item in enumerate(eval(result['topology'])):
+    for index, item in enumerate(result):
         device, port = item.split(':')
         if index % 2 == 0:
             if device in topology:
@@ -19,6 +17,14 @@ def get_topology(result):
                 topology += device + '(' + port + ')'
         else:
             topology += '<----->' + '(' + port + ')' + device
+    return topology
+
+
+def get_network_topology(topology, access_list):
+    topology = topology + '(' + access_list[0].split(':')[1] + ')' + '<----->'
+    for item in access_list[1:-1]:
+        topology += item + '<----->'
+    topology += access_list[-1]
     return topology
 
 
@@ -32,6 +38,7 @@ def check_topology(device_list):
 
 
 def get_device_account(device_alias, port):
+    from apps.database.port import DevicePort
     session = db.session
     result = session.query(DevicePort).filter_by(device_alias=device_alias, port=port).first()
     return result
@@ -45,10 +52,11 @@ def get_device_ip(device_list):
         if result:
             device_name_ip = result.device_alias + '：' + result.manage_ip
             device_name_ips.append(device_name_ip)
-    return device_name_ips
+    return list(set(device_name_ips))
 
 
 def handle_route(obj, set_redis_key=None, del_redis_key=None):
+    from apps.utils.util_tool import delete_relate_keys
     message = obj.data.get('message')
     if obj.data.get('result'):
         asyncio.run(set_value(set_redis_key, str(obj.data.get('data')))) if set_redis_key else None

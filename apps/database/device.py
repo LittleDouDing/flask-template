@@ -37,8 +37,8 @@ class DeviceManage:
         return handle_search_info(DeviceAccount, self._datadict)
 
     def _import_device_account(self):
-        return handle_upload_file(self.upload_file, DeviceAccount, HEADER, require_cols=[0, 1, 2, 3, 4])
+        return handle_upload_file(self.upload_file, DeviceAccount, header=HEADER, require_cols=[0, 1, 2, 3, 4])
 
     @staticmethod
     def _export_device_account():
-        return handle_export_file(DeviceAccount, HEADER, filename='设备台账信息')
+        return handle_export_file(DeviceAccount, filename='设备台账信息', header=HEADER)

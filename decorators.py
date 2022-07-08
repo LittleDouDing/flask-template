@@ -96,11 +96,16 @@ def file_required():
             verify_jwt_in_request()
             uploaded_file = request.files.get('file')
             if not uploaded_file:
-                return {'msg': 'Please upload excel file', 'code': 403}, 403
+                return {'msg': 'Please upload the excel file with the suffix xls', 'code': 403}, 403
             new_filename = random_filename(uploaded_file.filename)
             if new_filename:
                 file_ext = os.path.splitext(new_filename)[1]
                 if file_ext in current_app.config.get('UPLOAD_EXTENSIONS'):
+                    fp = uploaded_file.stream
+                    fp.seek(512)
+                    if fp.read(8) != b'\x09\x08\x10\x00\x00\x06\x05\x00':
+                        return {'msg': 'This file is not a legal xls file', 'code': 403}, 403
+                    fp.seek(0)
                     return fn(*args, **kwargs)
                 return {'msg': 'The file format does not conform to specification', 'code': 403}, 403
 

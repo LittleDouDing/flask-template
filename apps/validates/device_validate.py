@@ -35,7 +35,7 @@ class AddDeviceAccountForm(Form):
     ])
     manufacture = StringField(validators=[
         Optional(),
-        Length(max=50, message='The max length of manufacture is 5')
+        Length(max=5, message='The max length of manufacture is 5')
     ])
     network_level = StringField(validators=[
         Optional(),
@@ -86,7 +86,7 @@ class SearchDeviceAccountForm(Form):
     ])
     manufacture = StringField(validators=[
         Optional(),
-        Length(max=50, message='The max length of manufacture is 5')
+        Length(max=5, message='The max length of manufacture is 5')
     ])
     place = StringField(validators=[
         Optional(),

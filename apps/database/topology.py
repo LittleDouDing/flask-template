@@ -1,17 +1,18 @@
-from apps.models.models import DeviceTopology, DevicePort
+from apps.models.models import DeviceTopology
 from apps.models import db
 from apps.utils.database_tool import handle_add_info
-from apps.utils.database_tool import handle_modify_info, handle_delete_info, handle_search_topology
-
+from apps.utils.database_tool import handle_modify_info, handle_delete_info, handle_search_topology, handle_upload_file, \
+    handle_export_file, handle_get_topology
 
 session = db.session
 
 
 class TopologyManage:
-    def __init__(self, datadict, handle_type):
+    def __init__(self, upload_file=None, datadict=None, handle_type=None):
         self._datadict = datadict
-        if handle_type == 'search_device_port':
-            self.data = self._search_device_port()
+        self.upload_file = upload_file
+        if handle_type == 'import_topology':
+            self.data = self._import_topology()
         if handle_type == 'search_topology':
             self.data = self._search_topology()
         if handle_type == 'modify_topology':
@@ -20,19 +21,20 @@ class TopologyManage:
             self.data = self._add_topology()
         if handle_type == 'delete_topology':
             self.data = self._delete_topology()
+        if handle_type == 'export_topology':
+            self.data = self._export_topology()
+        if handle_type == 'get_topology':
+            self.data = self._get_topology()
 
-    def _search_device_port(self):
-        device_name = self._datadict.get('device_name')
-        device_type = self._datadict.get('device_type')
-        device_port = session.query(DevicePort).filter(DevicePort.device_name.like('%' + device_name + '%'),
-                                                       DevicePort.device_type == device_type).first()
-        if device_port:
-            data = {
-                'device_name': device_port.device_name,
-                'ports': device_port.ports,
-            }
-            return {'message': 'success', 'result': True, 'data': data}
-        return {'message': 'The device port does not exist', 'result': False}
+    def _get_topology(self):
+        return handle_get_topology(self._datadict)
+
+    def _import_topology(self):
+        return handle_upload_file(self.upload_file, DeviceTopology)
+
+    @staticmethod
+    def _export_topology():
+        return handle_export_file(DeviceTopology, filename='网络拓扑信息')
 
     def _search_topology(self):
         return handle_search_topology(self._datadict)

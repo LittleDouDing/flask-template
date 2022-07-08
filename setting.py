@@ -19,6 +19,8 @@ class Config:
     DB_URI = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8"
     SQLALCHEMY_DATABASE_URI = DB_URI
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # 每次请求结束之后都会提交数据库的变动
+    SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     # 调试
     SQLALCHEMY_ECHO = False
     # 配置邮箱
@@ -30,7 +32,7 @@ class Config:
     MAIL_PASSWORD = "UUXYDJQPGBNFSYXM"
     # 文件配置
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024
-    UPLOAD_EXTENSIONS = ['.xls', '.csv', '.xlsx']
+    UPLOAD_EXTENSIONS = ['.xls']
 
 
 class DevelopmentConfig(Config):

@@ -37,8 +37,8 @@ class PortManage:
         return handle_delete_info(DevicePort, self._datadict, 'port_id')
 
     def _import_device_port(self):
-        return handle_upload_file(self.upload_file, DevicePort, HEADER, require_cols=[0, 1, 2, 3, 4, 5])
+        return handle_upload_file(self.upload_file, DevicePort, header=HEADER, require_cols=[0, 1, 2, 3, 4, 5])
 
     @staticmethod
     def _export_device_port():
-        return handle_export_file(DevicePort, HEADER, filename='设备端口信息')
+        return handle_export_file(DevicePort, filename='设备端口信息', header=HEADER)
