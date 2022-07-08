@@ -217,6 +217,5 @@ class DevicePort(Base):
 
 listen(DevicePort.port, 'set', DevicePort.on_update_)
 listen(DeviceAccount.device_alias, 'set', DeviceAccount.on_update_)
-listen(MultipleAccount.main_topology, 'set', DeviceAccount.on_update_)
 listen(DevicePort, 'before_delete', DevicePort.on_delete_)
 listen(DeviceAccount, 'before_delete', DeviceAccount.on_delete_)

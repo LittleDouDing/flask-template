@@ -1,4 +1,4 @@
-from apps.models.models import MultipleAccount
+from apps.models.models import MultipleAccount, NetworkAccount
 from apps.models import db
 from apps.utils.database_tool import handle_search_multiple_account, handle_modify_info, handle_delete_info, \
     handle_add_info, handle_upload_file, handle_export_file
@@ -31,7 +31,24 @@ class MultipleManage:
         return handle_add_info(MultipleAccount, self._datadict, keys=['multiple_name'])
 
     def _modify_multiple_account(self):
-        return handle_modify_info(MultipleAccount, self._datadict, key='multiple_id')
+        key = 'multiple_id'
+        obj = session.query(MultipleAccount).filter(getattr(MultipleAccount, key) == self._datadict.get(key)).first()
+        main_topology, main_access, main_devices = '', '', ''
+        if obj:
+            main_topology = obj.main_topology
+            main_access = obj.main_access
+            main_devices = obj.main_devices
+        result = handle_modify_info(MultipleAccount, self._datadict, key='multiple_id')
+        if result.get('result'):
+            session.query(NetworkAccount).filter_by(
+                topology=main_topology, access_information=main_access, relate_device=main_devices
+            ).update({
+                NetworkAccount.topology: self._datadict.get('main_topology'),
+                NetworkAccount.access_information: self._datadict.get('main_access'),
+                NetworkAccount.relate_device: self._datadict.get('main_devices')
+            })
+            session.commit()
+        return result
 
     def _delete_multiple_account(self):
         return handle_delete_info(MultipleAccount, self._datadict, key='multiple_id')
