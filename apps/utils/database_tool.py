@@ -1,10 +1,10 @@
-from apps.models.models import DeviceTopology, MultipleAccount, User, Admin
+from apps.models.models import DeviceTopology, MultipleAccount, NetworkAccount, ChangeNetwork, User, Admin
 from apps.utils.util_tool import get_table_keys, get_database_err
 from apps.utils.route_tool import check_topology
 from apps.utils.route_tool import get_topology, get_device_ip, get_network_topology
 from apps.models import db
 import flask_excel as excel
-import datetime
+from datetime import datetime
 import xlrd
 
 session = db.session
@@ -50,28 +50,6 @@ def handle_modify_info(table, datadict, key):
         return {'message': get_database_err(e), 'result': False}
 
 
-def handle_change_password(table, datadict, identity):
-    username = datadict.get('username')
-    try:
-        if identity == 'admin':
-            new_pwd = datadict.get('password')
-            if not session.query(table).filter_by(username=username).first():
-                return {'message': 'The current user does not exist', 'result': False}
-            session.query(table).filter_by(username=username).update({table.password: new_pwd})
-        if identity == 'user':
-            pwd, new_pwd = datadict.get('password'), datadict.get('new_password')
-            if not session.query(table).filter_by(username=username, password=pwd).first():
-                return {'message': 'The old password you entered is incorrect', 'result': False}
-            if pwd == new_pwd:
-                return {'message': 'The new password and old password cannot be the same', 'result': False}
-            session.query(table).filter_by(username=username).update({table.password: new_pwd})
-        session.commit()
-        return {'message': 'The password reset successfully', 'result': True}
-    except Exception as e:
-        session.rollback()
-        return {'message': get_database_err(e), 'result': False}
-
-
 def handle_delete_info(table, datadict, key):
     if session.query(table).filter(getattr(table, key) == datadict.get(key)).first():
         try:
@@ -102,29 +80,6 @@ def handle_add_info(table, datadict, keys):
             session.rollback()
             return {'message': get_database_err(e), 'result': False}
     return {'message': 'The current record already exists', 'result': False}
-
-
-def handle_login(table, datadict):
-    username = datadict.get('username')
-    password = datadict.get('password')
-    user = session.query(table).filter_by(username=username, password=password).first()
-    if not user:
-        return {'message': 'The user account or password is incorrect', 'result': False}
-    author = user.author if table == User else None
-    is_admin = True if table == Admin else False
-    return {
-        'message': 'The current user login successfully', 'result': True, 'author': author, 'is_admin': is_admin
-    }
-
-
-def handle_get_user_info(table, datadict):
-    user = session.query(table).filter_by(username=datadict.get('username')).first()
-    if user:
-        data = {key: getattr(user, key) for key in get_table_keys(table, not_contain_keys=['password'])}
-        if table == User:
-            data['author'] = user.author
-        return {'message': 'success', 'result': True, 'data': data}
-    return {'message': 'This user does not exist', 'result': False}
 
 
 def handle_upload_file(uploaded_file, table, header=None, require_cols=None):
@@ -188,6 +143,51 @@ def handle_export_file(table, filename, header=None):
     return {'message': 'success', 'result': True, 'data': data}
 
 
+def handle_change_password(table, datadict, identity):
+    username = datadict.get('username')
+    try:
+        if identity == 'admin':
+            new_pwd = datadict.get('password')
+            if not session.query(table).filter_by(username=username).first():
+                return {'message': 'The current user does not exist', 'result': False}
+            session.query(table).filter_by(username=username).update({table.password: new_pwd})
+        if identity == 'user':
+            pwd, new_pwd = datadict.get('password'), datadict.get('new_password')
+            if not session.query(table).filter_by(username=username, password=pwd).first():
+                return {'message': 'The old password you entered is incorrect', 'result': False}
+            if pwd == new_pwd:
+                return {'message': 'The new password and old password cannot be the same', 'result': False}
+            session.query(table).filter_by(username=username).update({table.password: new_pwd})
+        session.commit()
+        return {'message': 'The password reset successfully', 'result': True}
+    except Exception as e:
+        session.rollback()
+        return {'message': get_database_err(e), 'result': False}
+
+
+def handle_login(table, datadict):
+    username = datadict.get('username')
+    password = datadict.get('password')
+    user = session.query(table).filter_by(username=username, password=password).first()
+    if not user:
+        return {'message': 'The user account or password is incorrect', 'result': False}
+    author = user.author if table == User else None
+    is_admin = True if table == Admin else False
+    return {
+        'message': 'The current user login successfully', 'result': True, 'author': author, 'is_admin': is_admin
+    }
+
+
+def handle_get_user_info(table, datadict):
+    user = session.query(table).filter_by(username=datadict.get('username')).first()
+    if user:
+        data = {key: getattr(user, key) for key in get_table_keys(table, not_contain_keys=['password'])}
+        if table == User:
+            data['author'] = user.author
+        return {'message': 'success', 'result': True, 'data': data}
+    return {'message': 'This user does not exist', 'result': False}
+
+
 def handle_search_topology(datadict):
     datadict = {'topology': datadict.get('device_name')} if datadict.get('device_name') else {}
     result = handle_search_info(DeviceTopology, datadict)
@@ -199,49 +199,6 @@ def handle_search_topology(datadict):
             result['data']['results'][idx]['topology_list'] = topology_list
             result['data']['results'][idx]['topology'] = get_topology(eval(res['topology']))
             result['data']['results'][idx]['device_ip'] = get_device_ip(topology_list)
-    return result
-
-
-def handle_search_multiple_account(table, datadict):
-    result = handle_search_info(table, datadict)
-    data = result.get('data')
-    if data:
-        results = data.get('results')
-        for idx, res in enumerate(results):
-            result['data']['results'][idx]['main_topology'] = eval(res.get('main_topology'))
-            result['data']['results'][idx]['main_access'] = eval(res.get('main_access'))
-            result['data']['results'][idx]['main_devices'] = eval(res.get('main_devices'))
-            main_network_topology = get_network_topology(get_topology(res['main_topology']), res['main_access'])
-            result['data']['results'][idx]['main_network_topology'] = main_network_topology
-            result['data']['results'][idx]['open_time'] = datetime.datetime.strftime(res.get('open_time'), '%Y-%m-%d')
-            if res.get('backup_topology'):
-                result['data']['results'][idx]['backup_topology'] = eval(res.get('backup_topology'))
-            if res.get('backup_access'):
-                result['data']['results'][idx]['backup_access'] = eval(res.get('backup_access'))
-            if res.get('backup_devices'):
-                result['data']['results'][idx]['backup_devices'] = eval(res.get('backup_devices'))
-            if res.get('backup_topology') and res.get('backup_access'):
-                backup_topology = get_topology(res['backup_topology'])
-                backup_network_topology = get_network_topology(backup_topology, res['backup_access'])
-                result['data']['results'][idx]['backup_network_topology'] = backup_network_topology
-    return result
-
-
-def handle_search_network_account(table, datadict):
-    result = handle_search_info(table, datadict)
-    data = result.get('data')
-    if data:
-        results = data.get('results')
-        for idx, res in enumerate(results):
-            result['data']['results'][idx]['ip_address'] = eval(res.get('ip_address'))
-            result['data']['results'][idx]['mask_router_dns'] = eval(res.get('mask_router_dns'))
-            result['data']['results'][idx]['topology'] = eval(res.get('topology'))
-            result['data']['results'][idx]['access_information'] = eval(res.get('access_information'))
-            network_topology = get_network_topology(get_topology(res['topology']), res['access_information'])
-            result['data']['results'][idx]['network_topology'] = network_topology
-            result['data']['results'][idx]['relate_device'] = eval(res.get('relate_device'))
-            finish_time = datetime.datetime.strftime(res.get('finnish_time'), '%Y-%m-%d')
-            result['data']['results'][idx]['finnish_time'] = finish_time
     return result
 
 
@@ -267,3 +224,37 @@ def handle_get_topology(datadict):
         data = {'topology': main_topology, 'access_information': main_access, 'relate_device': main_devices}
         return {'message': 'success', 'data': data, 'result': True}
     return {'message': 'The topology does not exist', 'result': False}
+
+
+def handle_search_account(table, datadict):
+    result = handle_search_info(table, datadict)
+    data = result.get('data')
+    if data:
+        results = data.get('results')
+        if table == NetworkAccount:
+            for idx, res in enumerate(results):
+                for key in ['ip_address', 'mask_router_dns', 'topology', 'access_information', 'relate_device']:
+                    result['data']['results'][idx][key] = eval(res.get(key))
+                network_topology = get_network_topology(get_topology(res['topology']), res['access_information'])
+                result['data']['results'][idx]['network_topology'] = network_topology
+                result['data']['results'][idx]['finnish_time'] = datetime.strftime(res.get('finnish_time'), '%Y-%m-%d')
+        elif table == MultipleAccount:
+            for idx, res in enumerate(results):
+                for key in ['main_topology', 'main_access', 'main_devices']:
+                    result['data']['results'][idx][key] = eval(res.get(key))
+                main_network_topology = get_network_topology(get_topology(res['main_topology']), res['main_access'])
+                result['data']['results'][idx]['main_network_topology'] = main_network_topology
+                result['data']['results'][idx]['open_time'] = datetime.strftime(res.get('open_time'), '%Y-%m-%d')
+                for key in ['backup_topology', 'backup_access', 'backup_devices']:
+                    if res.get(key):
+                        result['data']['results'][idx][key] = eval(res.get(key))
+                if res.get('backup_topology') and res.get('backup_access'):
+                    backup_topology = get_topology(res['backup_topology'])
+                    backup_network_topology = get_network_topology(backup_topology, res['backup_access'])
+                    result['data']['results'][idx]['backup_network_topology'] = backup_network_topology
+        elif table == ChangeNetwork:
+            for idx, res in enumerate(results):
+                for key in ['start_ip', 'end_ip']:
+                    result['data']['results'][idx][key] = eval(res.get(key))
+                result['data']['results'][idx]['change_time'] = datetime.strftime(res.get('change_time'), '%Y-%m-%d')
+    return result

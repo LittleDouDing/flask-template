@@ -1,6 +1,6 @@
-from apps.models.models import NetworkAccount
+from apps.models.models import NetworkAccount, ChangeNetwork
 from apps.models import db
-from apps.utils.database_tool import handle_search_network_account, handle_modify_info, handle_delete_info, \
+from apps.utils.database_tool import handle_search_account, handle_modify_info, handle_delete_info, \
     handle_add_info, handle_export_file, handle_upload_file
 
 session = db.session
@@ -25,6 +25,10 @@ class NetworkManage:
             self.data = self._export_network_account()
         if handle_type == 'import_network_account':
             self.data = self._import_network_account()
+        if handle_type == 'add_change_account':
+            self.data = self._add_change_account()
+        if handle_type == 'search_change_account':
+            self.data = self._search_change_account()
 
     def _add_network_account(self):
         return handle_add_info(NetworkAccount, self._datadict, keys=['ip_address'])
@@ -36,7 +40,7 @@ class NetworkManage:
         return handle_delete_info(NetworkAccount, self._datadict, key='network_id')
 
     def _search_network_account(self):
-        return handle_search_network_account(NetworkAccount, self._datadict)
+        return handle_search_account(NetworkAccount, self._datadict)
 
     def _import_network_account(self):
         require_cols = [0, 1, 3, 4, 6, 7, 8]
@@ -45,3 +49,9 @@ class NetworkManage:
     @staticmethod
     def _export_network_account():
         return handle_export_file(NetworkAccount, filename='专线台账信息', header=HEADER)
+
+    def _add_change_account(self):
+        return handle_add_info(ChangeNetwork, self._datadict, keys=['product_code'])
+
+    def _search_change_account(self):
+        return handle_search_account(ChangeNetwork, self._datadict)

@@ -190,3 +190,82 @@ class GetNetworkAccountForm(Form):
         Optional(),
         DataRequired(message='The number of pages must be an integer')
     ])
+
+
+class AddChangeAccountForm(Form):
+    change_time = DateField(validators=[DataRequired(message='The change time cannot be empty')])
+    name = StringField(validators=[
+        DataRequired(message='The name cannot be empty'),
+        Length(max=50, message='The max length of name is 50')
+    ])
+    start_ip = StringField(validators=[DataRequired(message='The start ip cannot be empty')])
+    end_ip = StringField(validators=[DataRequired(message='The end ip cannot be empty')])
+    monotony = StringField(validators=[
+        DataRequired(message='The monotony cannot be empty'),
+        Length(max=30, message='The max length of monotony is 30')
+    ])
+    product_code = StringField(validators=[
+        DataRequired(message='The product code  cannot be empty'),
+        Length(max=30, message='The max length of product code  is 30')
+    ])
+    access_device = StringField(validators=[
+        DataRequired(message='The access device cannot be empty'),
+        Length(max=25, message='The max length of access device is 25')
+    ])
+    device_ip = StringField(validators=[
+        DataRequired(message='The device ip cannot be empty'),
+        IPAddress(message='The device ip does not meet the specification')
+    ])
+    access_port = StringField(validators=[
+        DataRequired(message='The access port cannot be empty'),
+        Length(max=30, message='The max length of access port is 30')
+    ])
+    bandwidth = StringField(validators=[
+        DataRequired(message='The bandwidth cannot be empty'),
+        Length(max=10, message='The max length of bandwidth is 10')
+    ])
+    status = StringField(validators=[
+        DataRequired(message='The status cannot be empty'),
+        Regexp(r'^(0|1)$', message='The status must be 0 or 1')
+    ])
+    business_type = StringField(validators=[
+        DataRequired(message='The business type cannot be empty'),
+        Regexp(r'^(IDC|智享专车|商务快车|DIA|楼宇专线)$', message='The business type does not meet the specification')
+    ])
+    is_close = StringField(validators=[
+        DataRequired(message='The closing cannot be empty'),
+        Regexp(r'^(0|1)$', message='The closing must be 0 or 1')
+    ])
+
+    def validate_start_ip(self, filed):  # 自定义验证器：validate_字段名
+        if not isinstance(filed.data, list):
+            raise ValidationError('The data format of the ipaddress is not an array')
+        for item in self.start_ip.data:
+            if not re.match(Config.ipaddress(), item):
+                raise ValidationError('The start ip ' + item + ' does not conform to the specification')
+
+    def validate_end_ip(self, filed):  # 自定义验证器：validate_字段名
+        if not isinstance(filed.data, list):
+            raise ValidationError('The data format of the ipaddress is not an array')
+        for item in self.end_ip.data:
+            if not re.match(Config.ipaddress(), item):
+                raise ValidationError('The start ip ' + item + ' does not conform to the specification')
+
+
+class GetChangeAccountForm(Form):
+    change_time = StringField(validators=[
+        Optional(),
+        Length(max=10, message='The max length of change time is 10')
+    ])
+    name = StringField(validators=[
+        Optional(),
+        Length(max=50, message='The max length of name is 50')
+    ])
+    product_code = StringField(validators=[
+        Optional(),
+        Length(max=30, message='The max length of product code  is 30')
+    ])
+    page = IntegerField(validators=[
+        Optional(),
+        DataRequired(message='The number of pages must be an integer')
+    ])

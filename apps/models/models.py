@@ -33,6 +33,25 @@ class User(Base):
     phone = Column(VARCHAR(11), nullable=False, unique=True, comment='用户联系方式')
 
 
+class ChangeNetwork(Base):
+    __tablename__ = 'change_network'
+
+    change_id = Column(INTEGER(6), primary_key=True, comment='变更ID')
+    change_time = Column(Date, nullable=False, comment='变更日期')
+    name = Column(String(50), nullable=False, comment='客户名称')
+    start_ip = Column(String(128), nullable=False, comment='起始IP')
+    end_ip = Column(String(128), nullable=False, comment='终止IP')
+    monotony = Column(String(30), nullable=False, unique=True, comment='调单号')
+    product_code = Column(String(30), nullable=False, unique=True, comment='产品号码')
+    access_device = Column(String(25), nullable=False, comment='接入设备')
+    device_ip = Column(String(128), nullable=False, comment='设备IP')
+    access_port = Column(String(30), nullable=False, comment='接入端口')
+    bandwidth = Column(String(10), nullable=False, comment='配置带宽')
+    status = Column(String(2), nullable=False, comment='状态')
+    business_type = Column(String(10), nullable=False, comment='业务类型')
+    is_close = Column(String(2), nullable=False, comment='是否封堵80端口')
+
+
 class DeviceTopology(Base):
     __tablename__ = 'device_topology'
 
@@ -97,7 +116,7 @@ class NetworkAccount(Base):
                       index=True, comment='交换机拓扑')
     access_information = Column(String(255), comment='接入端信息')
     relate_device = Column(String(255), nullable=False, comment='相关设备')
-    bandwidth = Column(VARCHAR(6), comment='带宽')
+    bandwidth = Column(VARCHAR(10), comment='带宽')
     business_type = Column(VARCHAR(10), comment='业务类型')
     user_address = Column(VARCHAR(200), comment='客户地址')
     username = Column(VARCHAR(20), comment='联系人')

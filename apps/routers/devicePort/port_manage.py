@@ -15,7 +15,7 @@ port_bp = Blueprint('port_data', __name__, url_prefix='/api/v1/port')
 @port_bp.route('/add_port', methods=['POST'])
 @permission_required('configure')
 @jwt_required()
-def add_port():
+def add_device_port():
     form = AddPortForm(request.form)
     if form.validate():
         port = PortManage(datadict=get_form_data(form), handle_type='add_port')
@@ -47,7 +47,7 @@ def export_device_port():
 @port_bp.route('/delete_port', methods=['POST'])
 @permission_required('configure')
 @jwt_required()
-def delete_port():
+def delete_device_port():
     form = DeletePortForm(request.form)
     if form.validate():
         port = PortManage(datadict=get_form_data(form), handle_type='delete_port')
@@ -59,7 +59,7 @@ def delete_port():
 @port_bp.route('/modify_port', methods=['POST'])
 @permission_required('configure')
 @jwt_required()
-def modify_port():
+def modify_device_port():
     form = ModifyPortForm(request.form)
     if form.validate():
         port = PortManage(datadict=get_form_data(form), handle_type='modify_port')
@@ -70,7 +70,7 @@ def modify_port():
 
 @port_bp.route('/search_port', methods=['GET'])
 @jwt_required()
-def search_port():
+def search_device_port():
     form = GetPortForm(request.args)
     if form.validate():
         page = str(form.page.data) if form.page.data else '1'

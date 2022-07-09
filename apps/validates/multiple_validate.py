@@ -160,6 +160,23 @@ class ModifyMultipleAccountForm(AddMultipleAccountForm):
     multiple_id = StringField(validators=[DataRequired(message='The multiple id cannot be empty')])
 
 
+class ModifySomeMultipleAccountForm(Form):
+    multiple_id = StringField(validators=[DataRequired(message='The multiple id cannot be empty')])
+    scenes = StringField(validators=[
+        DataRequired(message='The scenes cannot be empty'),
+        Length(max=5, message='The max length of scenes is 5')
+    ])
+    is_room = StringField(validators=[
+        Optional(),
+        Regexp(regex=r'^[0|1]$', message='The room must be 0 or 1'),
+        Length(max=2, message='The max length of room is 2')
+    ])
+    longitude_latitude = StringField(validators=[
+        Optional(),
+        Length(max=20, message='The max length of longitude and latitude is 20')
+    ])
+
+
 class DeleteMultipleAccountForm(Form):
     multiple_id = StringField(validators=[DataRequired(message='The multiple id cannot be empty')])
 

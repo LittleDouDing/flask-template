@@ -93,7 +93,7 @@ def export_topology():
 def get_topology():
     form = GetDevicePortForm(request.args)
     if form.validate():
-        device_port = TopologyManage(datadict=get_form_data(form), handle_type='get_topology')
-        result, code = handle_route(device_port)
+        topology = TopologyManage(datadict=get_form_data(form), handle_type='get_topology')
+        result, code = handle_route(topology)
         return jsonify(result), code
     return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403

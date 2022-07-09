@@ -1,6 +1,6 @@
 from apps.models.models import MultipleAccount, NetworkAccount
 from apps.models import db
-from apps.utils.database_tool import handle_search_multiple_account, handle_modify_info, handle_delete_info, \
+from apps.utils.database_tool import handle_search_account, handle_modify_info, handle_delete_info, \
     handle_add_info, handle_upload_file, handle_export_file
 
 session = db.session
@@ -34,18 +34,20 @@ class MultipleManage:
         key = 'multiple_id'
         obj = session.query(MultipleAccount).filter(getattr(MultipleAccount, key) == self._datadict.get(key)).first()
         main_topology, main_access, main_devices = '', '', ''
+        topology, access_information = self._datadict.get('main_topology'), self._datadict.get('main_access'),
+        relate_device = self._datadict.get('main_devices')
         if obj:
             main_topology = obj.main_topology
             main_access = obj.main_access
             main_devices = obj.main_devices
         result = handle_modify_info(MultipleAccount, self._datadict, key='multiple_id')
-        if result.get('result'):
+        if result.get('result') and topology and access_information and relate_device:
             session.query(NetworkAccount).filter_by(
                 topology=main_topology, access_information=main_access, relate_device=main_devices
             ).update({
-                NetworkAccount.topology: self._datadict.get('main_topology'),
-                NetworkAccount.access_information: self._datadict.get('main_access'),
-                NetworkAccount.relate_device: self._datadict.get('main_devices')
+                NetworkAccount.topology: topology,
+                NetworkAccount.access_information: access_information,
+                NetworkAccount.relate_device: relate_device
             })
             session.commit()
         return result
@@ -54,7 +56,7 @@ class MultipleManage:
         return handle_delete_info(MultipleAccount, self._datadict, key='multiple_id')
 
     def _search_multiple_account(self):
-        return handle_search_multiple_account(MultipleAccount, self._datadict)
+        return handle_search_account(MultipleAccount, self._datadict)
 
     def _import_multiple_account(self):
         require_cols = [0, 1, 5, 6, 7, 8, 9, 10, 21, 22, 23, 24]

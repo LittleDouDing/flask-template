@@ -15,9 +15,10 @@ def permission_required(permission_name):
         def decorator(*args, **kwargs):
             verify_jwt_in_request()
             claims = get_jwt()
-            if claims.get('author') != permission_name:
-                return {'msg': 'The current user does not have permission to perform this operation', 'code': 403}, 403
-            return fn(*args, **kwargs)
+            author = claims.get('author')
+            if isinstance(permission_name, list) and author in permission_name or author == permission_name:
+                return fn(*args, **kwargs)
+            return {'msg': 'The current user does not have permission to perform this operation', 'code': 403}, 403
 
         return decorator
 

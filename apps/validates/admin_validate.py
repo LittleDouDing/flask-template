@@ -34,7 +34,7 @@ class AddUserForm(BaseUserForm):
     ])
     author = StringField(validators=[
         DataRequired(message='The user author cannot be empty'),
-        Regexp(regex='^(check|configure)$', message='The user permissions can only be check or configure')
+        Regexp(regex='^(check|configure|other)$', message='The user permissions can only be check、configure or other')
     ])
 
 
@@ -48,7 +48,7 @@ class DeleteUserForm(Form):
 class ChangeUserInfoForm(BaseUserForm):
     author = StringField(validators=[
         DataRequired(message='The user author cannot be empty'),
-        Regexp(regex=r'^(check|configure)$', message='The user permissions can only be check or configure')
+        Regexp(regex=r'^(check|configure|other)$', message='The user permissions can only be check、configure or other')
     ])
 
 
