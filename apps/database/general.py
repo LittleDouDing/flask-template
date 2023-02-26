@@ -6,9 +6,9 @@ session = db.session
 
 
 class UserManager:
-    def __init__(self, datadict, handle_type, usertype='user'):
+    def __init__(self, datadict, handle_type, user_type='user'):
         self._datadict = datadict
-        self._table = Admin if usertype == 'admin' else User
+        self._table = Admin if user_type == 'admin' else User
         self.identity = usertype
         if handle_type == 'modify_password':
             self.data = self._change_password()

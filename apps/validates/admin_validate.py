@@ -1,6 +1,7 @@
 from wtforms import Form
 from wtforms.fields import StringField, PasswordField, IntegerField
-from wtforms.validators import DataRequired, Length, Regexp, Email, Optional
+from wtforms.validators import DataRequired, Length, Regexp, Email, Optional, AnyOf
+from . import Config
 
 
 class BaseUserForm(Form):
@@ -10,8 +11,8 @@ class BaseUserForm(Form):
         Length(min=4, max=20, message='The length of the user account must be between 4-20')
     ])
     name = StringField(validators=[
-        DataRequired(message='The username cannot be empty'),
-        Length(min=2, max=30, message='The length of the username must be between 2-30')
+        DataRequired(message='The name cannot be empty'),
+        Length(min=2, max=30, message='The length of the name must be between 2-30')
     ])
     sex = StringField(validators=[
         DataRequired(message='The user sex cannot be empty'),
@@ -24,6 +25,10 @@ class BaseUserForm(Form):
     phone = StringField(validators=[
         DataRequired(message='The user phone cannot be empty'),
         Regexp(regex=r'^1[34578]\d{9}$', message='The phone is in the wrong format')
+    ])
+    department = StringField(validators=[
+        DataRequired(message='The department cannot be empty'),
+        AnyOf(values=Config.department(), message='The entered department is not within the specified range')
     ])
 
 
@@ -65,11 +70,27 @@ class GetAllUserForm(Form):
         Optional(),
         DataRequired(message='The number of pages must be an integer')
     ])
+    limit = IntegerField(validators=[
+        Optional(),
+        DataRequired(message='The limit of pages must be an integer')
+    ])
     username = StringField(validators=[
         Optional(),
         Regexp(regex=r'^\w{4,20}$', message='The username is in the wrong format'),
     ])
     name = StringField(validators=[
         Optional(),
-        Length(min=2, max=30, message='The length of the username must be between 2-30')
+        Length(min=2, max=30, message='The length of the name must be between 2-30')
+    ])
+    sex = StringField(validators=[
+        Optional(),
+        Regexp(regex=r'^[1|2]$', message='The user gender must be 1 or 2')
+    ])
+    department = StringField(validators=[
+        Optional(),
+        AnyOf(values=Config.department(), message='The entered department is not within the specified range')
+    ])
+    author = StringField(validators=[
+        Optional(),
+        Regexp(regex='^(check|configure|other)$', message='The user permissions can only be check、configure or other')
     ])

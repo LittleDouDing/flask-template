@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+verify_ssl = true
+name = "dou"
+
+[packages]
+pillow = "*"
+uuid = "*"
+flask-limiter = "*"
+flask-wtf = "*"
+flask-dropzone = "*"
+flask-excel = "*"
+xlwt = "*"
+pyexcel-xlsx = "*"
+pyexcel-xls = "*"
+openpyxl = "*"
+xlrd = "*"
+flask-cors = "*"
+netmiko = "*"
+flask-apscheduler = "*"
+translate = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

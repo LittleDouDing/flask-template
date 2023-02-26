@@ -1,12 +1,13 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
-from apps.utils.util_tool import get_error_message, get_form_data
+from apps.utils.util_tool import get_error_message, get_form_data, handle_access_week
 from apps.utils.route_tool import handle_route
 from apps.models import get_value, delete_key, set_times, set_value
 from apps.database.general import UserManager
 from apps.validates.general_validate import GetInformationFrom, LoginFrom, ChangeUserPasswordForm, ModifyInfoForm, \
     ChangeAdminPasswordForm
-from decorators import current_user_required, times_limited, random_code_required, email_code_required
+from decorators import current_user_required, times_limited, random_code_required, email_code_required, \
+    first_access_system
 import asyncio
 
 general_bp = Blueprint('general_data', __name__, url_prefix='/api/v1')
@@ -23,15 +24,16 @@ def get_user_info():
     if form.validate():
         user_info = asyncio.run(get_value(form.username.data + '_user_info'))
         if user_info:
-            return jsonify({'msg': 'success', 'data': eval(user_info), 'code': 200}), 200
+            return jsonify({'msg': 'success', 'data': eval(user_info), 'code': 200})
         user = UserManager(get_form_data(form), usertype=usertype, handle_type='get_info')
-        result, code = handle_route(user, set_redis_key=form.username.data + '_user_info')
-        return jsonify(result), code
-    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
+        result = handle_route(user, set_redis_key=form.username.data + '_user_info')
+        return jsonify(result)
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403})
 
 
 @general_bp.route('/admin/login', methods=['POST'])
 @general_bp.route('/user/login', methods=['POST'])
+@first_access_system()
 # @random_code_required()
 @times_limited(limit_type='error_num')
 @times_limited(limit_type='login_num')
@@ -48,21 +50,22 @@ def user_login():
             asyncio.run(delete_key(form_data.get('username') + '_error_num'))
             asyncio.run(set_times(form_data.get('username') + '_login_num', expire=21600))
             asyncio.run(delete_key(image_id))
-            asyncio.run(set_value(ip_address, form.username.data, expire=1800))
+            asyncio.run(set_value(ip_address, form.username.data, expire=43200))
+            handle_access_week()
             is_admin, author = user.data.get('is_admin'), user.data.get('author')
             access_token = create_access_token(
                 identity=form.username.data, additional_claims={'author': author, 'is_admin': is_admin}
             )
-            return jsonify({'msg': user.data.get('message'), 'token': access_token, 'code': 200}), 200
+            return jsonify({'msg': user.data.get('message'), 'token': access_token, 'code': 200})
         asyncio.run(set_times(form_data.get('username') + '_error_num'))
-        return jsonify({'msg': user.data.get('message'), 'code': 403}), 403
-    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
+        return jsonify({'msg': user.data.get('message'), 'code': 403})
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403})
 
 
 @general_bp.route('/admin/change_password', methods=['POST'])
 @general_bp.route('/user/change_password', methods=['POST'])
 @times_limited(limit_type='change_pwd_num')
-@email_code_required()
+# @email_code_required()
 @current_user_required()
 @jwt_required()
 def change_password():
@@ -75,10 +78,10 @@ def change_password():
     if form.validate():
         redis_key = form.username.data + '_change_pwd_num'
         user = UserManager(get_form_data(form), usertype=usertype, handle_type='modify_password')
-        result, code = handle_route(user)
-        asyncio.run(set_times(redis_key, expire=21600)) if code == 200 else None
-        return jsonify(result), code
-    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
+        result = handle_route(user)
+        asyncio.run(set_times(redis_key, expire=21600))
+        return jsonify(result)
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403})
 
 
 @general_bp.route('/admin/modify_info', methods=['POST'])
@@ -93,10 +96,10 @@ def modify_info():
     if form.validate():
         redis_key = form.username.data + '_modify_info_num'
         user = UserManager(get_form_data(form), usertype=usertype, handle_type='modify_info')
-        result, code = handle_route(user, del_redis_key='user')
-        asyncio.run(set_times(redis_key, expire=10800)) if code == 200 else None
-        return jsonify(result), code
-    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
+        result = handle_route(user, del_redis_key='user')
+        asyncio.run(set_times(redis_key, expire=10800))
+        return jsonify(result)
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403})
 
 
 @general_bp.route('/user/logout', methods=['POST'])
@@ -107,6 +110,5 @@ def user_logout():
     username = asyncio.run(get_value(ip_address))
     if username == get_jwt_identity():
         asyncio.run(delete_key(ip_address))
-        return {'msg': 'The user logout successfully', 'code': 200}, 200
-    return {'msg': 'The user logout failed', 'code': 403}, 403
-
+        return {'msg': 'The user logout successfully', 'code': 200}
+    return {'msg': 'The user logout failed', 'code': 403}

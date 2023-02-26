@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
 from aioredis.client import Redis
 from flask_sqlalchemy import SQLAlchemy
 
@@ -10,7 +8,7 @@ db = SQLAlchemy()
 
 async def connect_redis():
     redis = Redis()
-    redis = await redis.from_url("redis://127.0.0.1", port="6379", password="Lin123456", encoding='utf-8',
+    redis = await redis.from_url("redis://127.0.0.1", port="3306", password="XXXXXX", encoding='utf-8',
                                  decode_responses=True)
     return redis
 

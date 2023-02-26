@@ -18,10 +18,10 @@ admin_bp = Blueprint('admin_data', __name__, url_prefix='/api/v1/admin')
 def admin_add_user():
     form = AddUserForm(request.form)
     if form.validate():
-        user = AdminManager(get_form_data(form), handle_type='add_user')
-        result, code = handle_route(user, del_redis_key='user')
-        return jsonify(result), code
-    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
+        user = AdminManager(handle_type='add_user', datadict=get_form_data(form))
+        result = handle_route(user, del_redis_key='user')
+        return jsonify(result)
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403})
 
 
 @admin_bp.route('/delete_user', methods=["POST"])
@@ -30,10 +30,10 @@ def admin_add_user():
 def admin_delete_user():
     form = DeleteUserForm(request.form)
     if form.validate():
-        user = AdminManager(get_form_data(form), handle_type='delete_user')
-        result, code = handle_route(user, del_redis_key='user')
-        return jsonify(result), code
-    return {'msg': get_error_message(form.errors), 'code': 403}, 403
+        user = AdminManager(handle_type='delete_user', datadict=get_form_data(form))
+        result = handle_route(user, del_redis_key='user')
+        return jsonify(result)
+    return {'msg': get_error_message(form.errors), 'code': 403}
 
 
 @admin_bp.route('/change_user_password', methods=["POST"])
@@ -42,10 +42,10 @@ def admin_delete_user():
 def admin_change_user_password():
     form = ChangeUserPasswordForm(request.form)
     if form.validate():
-        user = AdminManager(get_form_data(form), handle_type='change_user_password')
-        result, code = handle_route(user, del_redis_key='user')
-        return jsonify(result), code
-    return {'msg': get_error_message(form.errors), 'code': 403}, 403
+        user = AdminManager(handle_type='change_user_password', datadict=get_form_data(form))
+        result = handle_route(user)
+        return jsonify(result)
+    return {'msg': get_error_message(form.errors), 'code': 403}
 
 
 @admin_bp.route('/modify_user_info', methods=["POST"])
@@ -54,10 +54,10 @@ def admin_change_user_password():
 def admin_modify_user_info():
     form = ChangeUserInfoForm(request.form)
     if form.validate():
-        user = AdminManager(get_form_data(form), handle_type='modify_user_info')
-        result, code = handle_route(user, del_redis_key='user')
-        return jsonify(result), code
-    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
+        user = AdminManager(handle_type='modify_user_info', datadict=get_form_data(form))
+        result = handle_route(user, del_redis_key='user')
+        return jsonify(result)
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403})
 
 
 @admin_bp.route('/all_users', methods=["GET"])
@@ -70,8 +70,20 @@ def get_all_users():
         redis_key = 'page_' + page + '_' + str(get_form_data(form).items()) + '_users'
         users_info = asyncio.run(get_value(redis_key))
         if users_info:
-            return jsonify({'msg': 'success', 'data': eval(users_info), 'code': 200}), 200
-        users = AdminManager(get_form_data(form), handle_type='get_all_users')
-        result, code = handle_route(users, set_redis_key=redis_key)
-        return jsonify(result), code
-    return jsonify({'msg': get_error_message(form.errors), 'code': 403}), 403
+            return jsonify({'msg': 'success', 'data': eval(users_info), 'code': 200})
+        users = AdminManager(handle_type='get_all_users', datadict=get_form_data(form))
+        result = handle_route(users, set_redis_key=redis_key)
+        return jsonify(result)
+    return jsonify({'msg': get_error_message(form.errors), 'code': 403})
+
+
+@admin_bp.route('/users_access_num', methods=["GET"])
+@admin_required()
+@jwt_required()
+def get_users_num():
+    users_num = asyncio.run(get_value('users_access_num'))
+    if users_num:
+        return jsonify({'msg': 'success', 'data': eval(users_num), 'code': 200})
+    user = AdminManager(handle_type='get_users_num')
+    result = handle_route(user, set_redis_key='users_access_num')
+    return jsonify(result)

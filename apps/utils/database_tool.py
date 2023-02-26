@@ -1,7 +1,8 @@
-from apps.models.models import DeviceTopology, MultipleAccount, NetworkAccount, ChangeNetwork, User, Admin
-from apps.utils.util_tool import get_table_keys, get_database_err
-from apps.utils.route_tool import check_topology
-from apps.utils.route_tool import get_topology, get_device_ip, get_network_topology
+import asyncio
+from apps.models.models import User, Admin
+from apps.utils.util_tool import get_table_keys, get_database_err, get_conditions, encrypt_password, \
+    check_illegal_data, get_table_id, validate_value
+from apps.models import get_value
 from apps.models import db
 import flask_excel as excel
 from datetime import datetime
@@ -13,15 +14,17 @@ not_contain_keys = ['device_id', 'port_id', 'topology_id', 'network_id', 'multip
 
 def handle_search_info(table, datadict):
     page = int(datadict.get('page')) if datadict.get('page') else 1
+    limit = int(datadict.get('limit')) if datadict.get('limit') else 10
     datadict = {key: datadict.get(key) for key in datadict if datadict.get(key)}
-    conditions = (table.__dict__.get(k).like('%' + datadict.get(k) + '%') for k in list(datadict) if k != 'page')
-    results = session.query(table).filter(*conditions).paginate(page=page, per_page=20, error_out=False).items
-    count = session.query(table).count()
-    all_page = count // 20 if count % 20 == 0 else count // 20 + 1
+    conditions = get_conditions(datadict, table)
+    tid = get_table_id(table)
+    results = session.query(table).order_by(desc(tid)).filter(*conditions).paginate(page=page, per_page=limit,
+                                                                                    error_out=False).items
+    total = session.query(table).filter(*get_conditions(datadict, table)).count()
     if results:
         table_keys = get_table_keys(table, not_contain_keys=['password'])
         all_result = [{key: getattr(obj, key) for key in table_keys} for obj in results]
-        all_data = {'current_page': page, 'all_page': all_page, 'results': all_result}
+        all_data = {'current_page': page, 'total': total, 'results': all_result}
         return {'message': 'success', 'result': True, 'data': all_data}
     return {'message': 'There are currently no record exist', 'result': False}
 
@@ -33,7 +36,7 @@ def handle_modify_info(table, datadict, key):
     try:
         data = {k: obj.__dict__.get(k) for k in obj.__dict__ if k != '_sa_instance_state'}
         if table == DeviceTopology:
-            result = check_topology(datadict.get('topology'))
+            result = check_topology(eval(datadict.get('topology')))
             if not result.get('result'):
                 return {'message': result.get('message'), 'result': False}
             if datadict.get('topology') == data.get('topology'):
@@ -51,10 +54,10 @@ def handle_modify_info(table, datadict, key):
 
 
 def handle_delete_info(table, datadict, key):
-    if session.query(table).filter(getattr(table, key) == datadict.get(key)).first():
+    ids = [int(item) for item in eval(datadict.get(key))]
+    if session.query(table).filter(table.__dict__.get(key).in_(ids)).first():
         try:
-            obj = session.query(table).filter(getattr(table, key) == datadict.get(key)).first()
-            session.delete(obj)
+            session.query(table).filter(table.__dict__.get(key).in_(ids)).delete()
             session.commit()
             return {'message': 'The record has been successfully deleted', 'result': True}
         except Exception as e:
@@ -64,10 +67,13 @@ def handle_delete_info(table, datadict, key):
 
 
 def handle_add_info(table, datadict, keys):
-    conditions = (getattr(table, key) == datadict.get(key) for key in keys)
+    if table == NetworkAccount:
+        conditions = get_network_conditions(table, datadict)
+    else:
+        conditions = (getattr(table, key) == datadict.get(key) for key in keys)
     if not session.query(table).filter(*conditions).first():
         try:
-            result = check_topology(datadict.get('topology')) if 'topology' in keys else {'result': True}
+            result = check_topology(eval(datadict.get('topology'))) if 'topology' in keys else {'result': True}
             if not result.get('result'):
                 return {'message': result.get('message'), 'result': False}
             obj = table()
@@ -82,7 +88,7 @@ def handle_add_info(table, datadict, keys):
     return {'message': 'The current record already exists', 'result': False}
 
 
-def handle_upload_file(uploaded_file, table, header=None, require_cols=None):
+def handle_upload_file(uploaded_file, table, header=None):
     try:
         excel_file = xlrd.open_workbook(file_contents=uploaded_file.read())
     except Exception as e:
@@ -98,30 +104,40 @@ def handle_upload_file(uploaded_file, table, header=None, require_cols=None):
     table_keys = get_table_keys(table=table, not_contain_keys=not_contain_keys)
     obj_list = []
     try:
+        validate_results = []
         for i in range(start_index, sheet.nrows):
             obj = table()
+            table_list = []
             if table != DeviceTopology:
                 for j in range(sheet.ncols):
                     cell_value = sheet.row_values(i)[j]
-                    if j in require_cols and not cell_value:
-                        table_key = ' '.join(table_keys[j].split('_'))
-                        return {'message': 'The ' + table_key + ' cant not be empty', 'result': False}
+
+                    if check_illegal_data(cell_value):
+                        line = '(' + str(i + 1) + ' line)'
+                        return {'message': 'The ' + cell_value + ' is illegal' + line, 'result': False}
                     if 'time' in table_keys[j]:
-                        data = datetime.datetime(1900, 1, 1) + datetime.timedelta(cell_value - 2)
+                        data = xlrd.xldate_as_datetime(cell_value, 0).date()
+                        table_list.append((table_keys[j], str(data)))
                     else:
+                        table_list.append((table_keys[j], cell_value))
                         data = str(int(cell_value)) if isinstance(cell_value, float) else str(cell_value).strip()
                     setattr(obj, table_keys[j], data)
+                validate_result = validate_value(table_list, table)
+                if validate_result:
+                    validate_results.append(validate_result + '(' + str(i + 1) + ' line)')
             else:
                 for j in range(sheet.ncols):
                     cell_value = sheet.row_values(i)[j]
                     if ':' not in sheet.row_values(i)[j]:
                         return {'message': 'The format of topology ' + cell_value + ' is illegal', 'result': False}
-                    result = check_topology([str(cell_value).strip()])
-                    if not result.get('result'):
-                        return {'message': result.get('message'), 'result': False}
+                result = check_topology(sheet.row_values(i))
+                if not result.get('result'):
+                    return {'message': result.get('message'), 'result': False}
                 topology = str([sheet.row_values(i)[j].replace("'", '"').strip() for j in range(sheet.ncols)])
                 setattr(obj, 'topology', topology)
             obj_list.append(obj)
+        if validate_results:
+            return {'message': validate_results, 'result': False}
         session.add_all(obj_list)
         session.commit()
         return {'message': 'All records added successfully', 'result': True}
@@ -147,12 +163,12 @@ def handle_change_password(table, datadict, identity):
     username = datadict.get('username')
     try:
         if identity == 'admin':
-            new_pwd = datadict.get('password')
+            new_pwd = encrypt_password(datadict.get('password'))
             if not session.query(table).filter_by(username=username).first():
                 return {'message': 'The current user does not exist', 'result': False}
             session.query(table).filter_by(username=username).update({table.password: new_pwd})
         if identity == 'user':
-            pwd, new_pwd = datadict.get('password'), datadict.get('new_password')
+            pwd, new_pwd = encrypt_password(datadict.get('password')), encrypt_password(datadict.get('new_password'))
             if not session.query(table).filter_by(username=username, password=pwd).first():
                 return {'message': 'The old password you entered is incorrect', 'result': False}
             if pwd == new_pwd:
@@ -167,7 +183,7 @@ def handle_change_password(table, datadict, identity):
 
 def handle_login(table, datadict):
     username = datadict.get('username')
-    password = datadict.get('password')
+    password = encrypt_password(datadict.get('password'))
     user = session.query(table).filter_by(username=username, password=password).first()
     if not user:
         return {'message': 'The user account or password is incorrect', 'result': False}
@@ -186,75 +202,3 @@ def handle_get_user_info(table, datadict):
             data['author'] = user.author
         return {'message': 'success', 'result': True, 'data': data}
     return {'message': 'This user does not exist', 'result': False}
-
-
-def handle_search_topology(datadict):
-    datadict = {'topology': datadict.get('device_name')} if datadict.get('device_name') else {}
-    result = handle_search_info(DeviceTopology, datadict)
-    data = result.get('data')
-    if data:
-        results = data.get('results')
-        for idx, res in enumerate(results):
-            topology_list = eval(res.get('topology'))
-            result['data']['results'][idx]['topology_list'] = topology_list
-            result['data']['results'][idx]['topology'] = get_topology(eval(res['topology']))
-            result['data']['results'][idx]['device_ip'] = get_device_ip(topology_list)
-    return result
-
-
-def handle_get_topology(datadict):
-    device_name = datadict.get('device_name')
-    device_type = datadict.get('device_type')
-    if device_type == 'Switch':
-        port = datadict.get('port')
-        if not port:
-            return {'message': 'The port cannot be empty', 'result': False}
-        device_port = device_name + ':' + port
-        results = session.query(DeviceTopology).filter(DeviceTopology.topology.like('%' + device_port + '%'))
-        for res in results:
-            topology = eval(res.topology)
-            if topology[-1] == device_port:
-                data = {'topology': topology, 'relate_device': get_device_ip(topology)}
-                return {'message': 'success', 'data': data, 'result': True}
-    else:
-        condition = MultipleAccount.multiple_name.like('%' + device_name + '%')
-        result = session.query(MultipleAccount).filter(condition).first()
-        main_topology, main_access = eval(result.main_topology), eval(result.main_access)
-        main_devices = eval(result.main_devices)
-        data = {'topology': main_topology, 'access_information': main_access, 'relate_device': main_devices}
-        return {'message': 'success', 'data': data, 'result': True}
-    return {'message': 'The topology does not exist', 'result': False}
-
-
-def handle_search_account(table, datadict):
-    result = handle_search_info(table, datadict)
-    data = result.get('data')
-    if data:
-        results = data.get('results')
-        if table == NetworkAccount:
-            for idx, res in enumerate(results):
-                for key in ['ip_address', 'mask_router_dns', 'topology', 'access_information', 'relate_device']:
-                    result['data']['results'][idx][key] = eval(res.get(key))
-                network_topology = get_network_topology(get_topology(res['topology']), res['access_information'])
-                result['data']['results'][idx]['network_topology'] = network_topology
-                result['data']['results'][idx]['finnish_time'] = datetime.strftime(res.get('finnish_time'), '%Y-%m-%d')
-        elif table == MultipleAccount:
-            for idx, res in enumerate(results):
-                for key in ['main_topology', 'main_access', 'main_devices']:
-                    result['data']['results'][idx][key] = eval(res.get(key))
-                main_network_topology = get_network_topology(get_topology(res['main_topology']), res['main_access'])
-                result['data']['results'][idx]['main_network_topology'] = main_network_topology
-                result['data']['results'][idx]['open_time'] = datetime.strftime(res.get('open_time'), '%Y-%m-%d')
-                for key in ['backup_topology', 'backup_access', 'backup_devices']:
-                    if res.get(key):
-                        result['data']['results'][idx][key] = eval(res.get(key))
-                if res.get('backup_topology') and res.get('backup_access'):
-                    backup_topology = get_topology(res['backup_topology'])
-                    backup_network_topology = get_network_topology(backup_topology, res['backup_access'])
-                    result['data']['results'][idx]['backup_network_topology'] = backup_network_topology
-        elif table == ChangeNetwork:
-            for idx, res in enumerate(results):
-                for key in ['start_ip', 'end_ip']:
-                    result['data']['results'][idx][key] = eval(res.get(key))
-                result['data']['results'][idx]['change_time'] = datetime.strftime(res.get('change_time'), '%Y-%m-%d')
-    return result
