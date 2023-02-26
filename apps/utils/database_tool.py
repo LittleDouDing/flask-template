@@ -34,16 +34,8 @@ def handle_modify_info(table, datadict, key):
     if not obj:
         return {'message': 'The current record does not exist', 'result': False}
     try:
-        data = {k: obj.__dict__.get(k) for k in obj.__dict__ if k != '_sa_instance_state'}
-        if table == DeviceTopology:
-            result = check_topology(eval(datadict.get('topology')))
-            if not result.get('result'):
-                return {'message': result.get('message'), 'result': False}
-            if datadict.get('topology') == data.get('topology'):
-                return {'message': 'There is currently no need to modify any information', 'result': False}
-        else:
-            if len(datadict) <= 1 or set(datadict.items()).issubset(set(data.items())):
-                return {'message': 'There is currently no need to modify any information', 'result': False}
+        if len(datadict) <= 1 or set(datadict.items()).issubset(set(data.items())):
+            return {'message': 'There is currently no need to modify any information', 'result': False}
         for k in datadict:
             setattr(obj, k, datadict.get(k))
         session.commit()
@@ -67,15 +59,9 @@ def handle_delete_info(table, datadict, key):
 
 
 def handle_add_info(table, datadict, keys):
-    if table == NetworkAccount:
-        conditions = get_network_conditions(table, datadict)
-    else:
-        conditions = (getattr(table, key) == datadict.get(key) for key in keys)
+    conditions = (getattr(table, key) == datadict.get(key) for key in keys)
     if not session.query(table).filter(*conditions).first():
         try:
-            result = check_topology(eval(datadict.get('topology'))) if 'topology' in keys else {'result': True}
-            if not result.get('result'):
-                return {'message': result.get('message'), 'result': False}
             obj = table()
             for k in get_table_keys(table, not_contain_keys=not_contain_keys):
                 setattr(obj, k, datadict.get(k))
@@ -94,47 +80,33 @@ def handle_upload_file(uploaded_file, table, header=None):
     except Exception as e:
         return {'message': str(e), 'result': False}
     sheet = excel_file.sheet_by_index(0)
-    if table != DeviceTopology and header:
-        start_index = 1
+    if header:
         temp_header = [str(header).replace('*', '').strip() for header in sheet.row_values(0)]
         if header != temp_header:
             return {'message': 'The first row of the table is different from the template', 'result': False}
-    else:
-        start_index = 0
     table_keys = get_table_keys(table=table, not_contain_keys=not_contain_keys)
     obj_list = []
     try:
         validate_results = []
-        for i in range(start_index, sheet.nrows):
+        for i in range(1, sheet.nrows):
             obj = table()
             table_list = []
-            if table != DeviceTopology:
-                for j in range(sheet.ncols):
-                    cell_value = sheet.row_values(i)[j]
+            for j in range(sheet.ncols):
+                cell_value = sheet.row_values(i)[j]
 
-                    if check_illegal_data(cell_value):
-                        line = '(' + str(i + 1) + ' line)'
-                        return {'message': 'The ' + cell_value + ' is illegal' + line, 'result': False}
-                    if 'time' in table_keys[j]:
-                        data = xlrd.xldate_as_datetime(cell_value, 0).date()
-                        table_list.append((table_keys[j], str(data)))
-                    else:
-                        table_list.append((table_keys[j], cell_value))
-                        data = str(int(cell_value)) if isinstance(cell_value, float) else str(cell_value).strip()
-                    setattr(obj, table_keys[j], data)
-                validate_result = validate_value(table_list, table)
-                if validate_result:
-                    validate_results.append(validate_result + '(' + str(i + 1) + ' line)')
-            else:
-                for j in range(sheet.ncols):
-                    cell_value = sheet.row_values(i)[j]
-                    if ':' not in sheet.row_values(i)[j]:
-                        return {'message': 'The format of topology ' + cell_value + ' is illegal', 'result': False}
-                result = check_topology(sheet.row_values(i))
-                if not result.get('result'):
-                    return {'message': result.get('message'), 'result': False}
-                topology = str([sheet.row_values(i)[j].replace("'", '"').strip() for j in range(sheet.ncols)])
-                setattr(obj, 'topology', topology)
+                if check_illegal_data(cell_value):
+                    line = '(' + str(i + 1) + ' line)'
+                    return {'messag e': 'The ' + cell_value + ' is illegal' + line, 'result': False}
+                if 'time' in table_keys[j]:
+                    data = xlrd.xldate_as_datetime(cell_value, 0).date()
+                    table_list.append((table_keys[j], str(data)))
+                else:
+                    table_list.append((table_keys[j], cell_value))
+                    data = str(int(cell_value)) if isinstance(cell_value, float) else str(cell_value).strip()
+                setattr(obj, table_keys[j], data)
+            validate_result = validate_value(table_list, table)
+            if validate_result:
+                validate_results.append(validate_result + '(' + str(i + 1) + ' line)')
             obj_list.append(obj)
         if validate_results:
             return {'message': validate_results, 'result': False}
@@ -151,10 +123,7 @@ def handle_export_file(table, filename, header=None):
     if not results:
         return {'message': 'There are currently no record exist', 'result': False}
     table_keys = get_table_keys(table, not_contain_keys=not_contain_keys)
-    if table == DeviceTopology:
-        all_result = [[topology for topology in eval(obj.topology)] for obj in results]
-    else:
-        all_result = [header] + [[getattr(obj, key) for key in table_keys] for obj in results]
+    all_result = [header] + [[getattr(obj, key) for key in table_keys] for obj in results]
     data = excel.make_response_from_array(all_result, "xls", file_name=filename)
     return {'message': 'success', 'result': True, 'data': data}
 
